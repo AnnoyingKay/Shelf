@@ -119,7 +119,7 @@ const STATUS={want:'Want to read',reading:'Reading',finished:'Finished',dnf:'Did
 const SEMO={want:'🔖',reading:'📖',finished:'✨',dnf:'🍂'};
 const PASTEL=['#f4c9b8','#d9e4c4','#cfe0e8','#f1dca7','#e3cfe6','#f6d3d3','#c9e3d6'];
 const tint=t=>{let h=0;for(const c of t||'?')h=(h*31+c.charCodeAt(0))>>>0;return PASTEL[h%PASTEL.length]};
-let db={books:[],goals:{}};
+let db={books:[],goals:{},sync:{uid:'',last:0,at:0,dirty:{},tomb:{},goalsAt:0,enabled:false}};
 const ui={tab:'library',status:'all',q:'',sort:'added',format:'all',year:new Date().getFullYear()};
 let d=null,isNew=false,lookupRes=null,lookupMsg='';
 const $=s=>document.querySelector(s);
@@ -129,8 +129,10 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const fmtDate=s=>{if(!s)return'';const x=new Date(s+'T00:00:00');return isNaN(x)?s:x.toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'})};
 const days=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
 
-function load(){try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);db.books=p.books||[];db.goals=p.goals||{}}}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Could not save. Storage may be full or blocked.')}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);db.books=p.books||[];db.goals=p.goals||{};db.sync=Object.assign(db.sync,p.sync||{})}}catch(e){}
+  const S=db.sync;S.dirty=S.dirty||{};S.tomb=S.tomb||{};db.books.forEach(b=>{if(!b.updated){b.updated=Date.now();S.dirty[b.id]=1}})}
+function touch(b){b.updated=Date.now();db.sync.dirty[b.id]=1;delete db.sync.tomb[b.id]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Could not save. Storage may be full or blocked.')}scheduleSync()}
 let tt;function toast(m){let t=$('.toast');if(t)t.remove();t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);clearTimeout(tt);tt=setTimeout(()=>t.remove(),2800)}
 
 const lastEnd=b=>b.reads.reduce((m,r)=>r.end&&r.end>m?r.end:m,'');
@@ -203,8 +205,10 @@ function renderStats(){
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(ui.tab==='settings')render()});
 function renderSettings(){
   $('#tools').innerHTML='';
+  if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(ui.tab==='settings')render()})}
   const y=new Date().getFullYear();
   $('#main').innerHTML=`<div class="sec"><h3>Reading goal for ${y}</h3><input id="goal" type="number" min="0" inputmode="numeric" placeholder="Books this year" value="${esc(db.goals[y]||'')}"></div>
+  ${syncBox()}
   <div class="sec"><h3>Backup</h3><p class="note">Your books live only on this device. Export a backup now and then, and before clearing browser data or changing phone.</p>
   <div class="setrow"><button class="btn p" data-act="exportjson">Export backup (JSON)</button><button class="btn" data-act="exportcsv">Export CSV</button></div>
   <div class="setrow"><label class="btn">Import backup<input type="file" id="impjson" accept=".json,application/json" hidden></label></div></div>
@@ -257,7 +261,7 @@ function setStatus(s){
 }
 function saveBook(){
   if(!d.title.trim()){toast('Please add a title.');return}
-  d.title=d.title.trim();d.reads=d.reads.filter(r=>r.start||r.end);
+  d.title=d.title.trim();d.reads=d.reads.filter(r=>r.start||r.end);touch(d);
   const i=db.books.findIndex(b=>b.id===d.id);if(i>=0)db.books[i]=d;else db.books.push(d);
   save();closeForm();render();toast('Saved');
 }
@@ -325,14 +329,128 @@ function importGoodreads(text){
     const shelf=g(r,'Exclusive Shelf'),st=shelf==='read'?'finished':shelf==='currently-reading'?'reading':'want';
     const b=newBook({title:g(r,'Title'),author:g(r,'Author'),isbn:(g(r,'ISBN13')||g(r,'ISBN')).replace(/[^0-9Xx]/g,''),rating:+g(r,'My Rating')||0,pages:g(r,'Number of Pages'),format:bind(g(r,'Binding')),status:st,review:g(r,'My Review'),notes:g(r,'Private Notes'),added:dt(g(r,'Date Added'))||today(),genres:g(r,'Bookshelves').split(',').map(s=>s.trim()).filter(s=>s&&!['read','to-read','currently-reading'].includes(s))});
     const dr=dt(g(r,'Date Read'));if(st==='finished')b.reads=[{start:'',end:dr}];if(st==='reading')b.reads=[{start:dt(g(r,'Date Added')),end:''}];
-    if(have.has(key(b))){skip++;return}have.add(key(b));db.books.push(b);n++;
+    if(have.has(key(b))){skip++;return}have.add(key(b));touch(b);db.books.push(b);n++;
   });
   save();render();toast(`Imported ${n} book${n===1?'':'s'}${skip?`, skipped ${skip} duplicate${skip===1?'':'s'}`:''}.`);
 }
 function importJSON(text){
-  try{const p=JSON.parse(text);if(!Array.isArray(p.books))throw 0;const m=new Map(db.books.map(b=>[b.id,b]));p.books.forEach(b=>m.set(b.id,newBook(b)));db.books=[...m.values()];db.goals=Object.assign(db.goals,p.goals||{});save();render();toast('Backup imported.')}
+  try{const p=JSON.parse(text);if(!Array.isArray(p.books))throw 0;const m=new Map(db.books.map(b=>[b.id,b]));p.books.forEach(b=>{const nb=newBook(b);touch(nb);m.set(nb.id,nb)});db.books=[...m.values()];db.goals=Object.assign(db.goals,p.goals||{});save();render();toast('Backup imported.')}
   catch(e){toast('Could not read that backup file.')}
 }
+
+/* ---------- Sync (Firebase) ---------- */
+const FB_VER='10.14.1';
+let FB=null,syncing=false,syncMsg='',syncT;
+const st={user:null,ready:false,configured:null,tried:false,error:''};
+async function fbInit(){
+  if(FB)return FB;
+  let cfg;
+  try{cfg=(await import('./firebase-config.js')).default}catch(e){st.configured=false;return null}
+  if(!cfg||!cfg.apiKey||/PASTE/i.test(cfg.apiKey)){st.configured=false;return null}
+  st.configured=true;
+  try{
+    const base='https://www.gstatic.com/firebasejs/'+FB_VER+'/';
+    const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
+    const a=app.initializeApp(cfg);
+    FB={auth:auth.getAuth(a),fs:fs.getFirestore(a),A:auth,F:fs};
+    FB.A.onAuthStateChanged(FB.auth,u=>{st.user=u;st.ready=true;if(u)onSignedIn(u);if(ui.tab==='settings')render()});
+    st.error='';
+  }catch(e){FB=null;st.error='Could not load the sync service. Check your connection.';st.tried=false}
+  return FB;
+}
+function onSignedIn(u){
+  const S=db.sync;
+  if(S.uid!==u.uid){S.uid=u.uid;S.last=0;db.books.forEach(b=>S.dirty[b.id]=1);S.dirty.goals=1}
+  S.enabled=true;save();sync();
+}
+function scheduleSync(){if(!FB||!st.user||syncing)return;clearTimeout(syncT);syncT=setTimeout(()=>sync(),1500)}
+function setMsg(m){syncMsg=m;const e=$('#syncStatus');if(e)e.textContent=m}
+function syncBox(){
+  const S=db.sync;let body;
+  if(st.configured===false)body='<p class="note">Sync is not switched on yet. To enable it, add your Firebase settings to the file firebase-config.js.</p>';
+  else if(st.error)body=`<p class="note">${esc(st.error)}</p>`;
+  else if(!st.ready)body='<p class="note">Checking…</p>';
+  else if(!st.user)body=`<p class="note">Sign in to keep your library in step across your devices. Your books stay on this phone either way.</p>
+    <div class="f"><input id="syEmail" type="email" autocomplete="username" placeholder="Email"></div>
+    <div class="f"><input id="syPass" type="password" autocomplete="current-password" placeholder="Password (6 characters or more)"></div>
+    <div class="setrow"><button class="btn p" data-act="signin">Sign in</button><button class="btn" data-act="signup">Create account</button><button class="btn" data-act="resetpw">Forgot password</button></div>`;
+  else body=`<p class="note">Signed in as ${esc(st.user.email)}.<br><span id="syncStatus">${esc(syncMsg||(S.at?'Last synced '+new Date(S.at).toLocaleString('en-IE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Not synced yet.'))}</span></p>
+    <div class="setrow"><button class="btn p" data-act="syncnow">Sync now</button><button class="btn" data-act="signout">Sign out</button></div>`;
+  return `<div class="sec"><h3>Sync across devices</h3>${body}</div>`;
+}
+function authErr(e){
+  const c=(e&&e.code)||'';
+  return {'auth/invalid-credential':'That email or password is not right.','auth/wrong-password':'That email or password is not right.','auth/user-not-found':'That email or password is not right.','auth/invalid-email':'That email address does not look right.','auth/email-already-in-use':'That email already has an account. Use Sign in.','auth/weak-password':'Choose a password of at least 6 characters.','auth/network-request-failed':'No connection. Try again when you are online.','auth/operation-not-allowed':'Email sign in is not switched on in Firebase yet.','auth/too-many-requests':'Too many tries. Wait a few minutes and try again.'}[c]||('Sign in failed ('+(c||'unknown')+').');
+}
+async function doAuth(kind){
+  const f=await fbInit();if(!f){toast(st.error||'Sync is not switched on yet.');return}
+  const email=($('#syEmail').value||'').trim(),pw=$('#syPass').value||'';
+  if(!email||!pw){toast('Enter your email and password.');return}
+  try{kind==='up'?await f.A.createUserWithEmailAndPassword(f.auth,email,pw):await f.A.signInWithEmailAndPassword(f.auth,email,pw)}
+  catch(e){toast(authErr(e))}
+}
+async function doReset(){
+  const f=await fbInit();if(!f)return;const email=($('#syEmail').value||'').trim();
+  if(!email){toast('Type your email above first.');return}
+  try{await f.A.sendPasswordResetEmail(f.auth,email);toast('Reset email sent. Check your inbox.')}catch(e){toast(authErr(e))}
+}
+async function doSignOut(){if(!FB)return;try{await FB.A.signOut(FB.auth)}catch(e){}db.sync.enabled=false;syncMsg='';save();render()}
+async function sync(manual){
+  if(syncing||!FB||!st.user)return;
+  if(!navigator.onLine){if(manual)toast('You are offline. It will sync later.');return}
+  syncing=true;setMsg('Syncing…');
+  const F=FB.F,fs=FB.fs,S=db.sync,col=F.collection(fs,'users',st.user.uid,'books');
+  try{
+    let changed=false,maxS=S.last;
+    const snap=await F.getDocs(F.query(col,F.where('synced','>',F.Timestamp.fromMillis(S.last))));
+    snap.forEach(dc=>{
+      const r=dc.data(),id=dc.id,sm=r.synced&&r.synced.toMillis?r.synced.toMillis():0;if(sm>maxS)maxS=sm;
+      const i=db.books.findIndex(b=>b.id===id),local=i>=0?db.books[i]:null,tomb=S.tomb[id]||0;
+      if(r.deleted){
+        if(local){if(r.updated>=local.updated){db.books.splice(i,1);delete S.dirty[id];S.tomb[id]=r.updated;changed=true}else S.dirty[id]=1}
+        else if(r.updated>tomb)S.tomb[id]=r.updated;
+        return;
+      }
+      if(local&&local.updated>=r.updated){if(local.updated>r.updated)S.dirty[id]=1;return}
+      if(!local&&tomb>=r.updated){S.dirty[id]=1;return}
+      let b;try{b=newBook(JSON.parse(r.json))}catch(e){return}
+      b.updated=r.updated;if(i>=0)db.books[i]=b;else db.books.push(b);
+      delete S.dirty[id];delete S.tomb[id];changed=true;
+    });
+    const gref=F.doc(fs,'users',st.user.uid,'meta','goals'),gs=await F.getDoc(gref);
+    if(gs.exists()){
+      const g=gs.data();
+      if(g.updated>S.goalsAt){try{db.goals=JSON.parse(g.json);S.goalsAt=g.updated;delete S.dirty.goals;changed=true}catch(e){}}
+      else if(S.goalsAt>g.updated)S.dirty.goals=1;
+    }else if(Object.keys(db.goals).length)S.dirty.goals=1;
+    const ids=Object.keys(S.dirty).filter(k=>k!=='goals');
+    for(let i=0;i<ids.length;i+=100){
+      const chunk=ids.slice(i,i+100),batch=F.writeBatch(fs);
+      chunk.forEach(id=>{
+        const b=db.books.find(x=>x.id===id);
+        if(b)batch.set(F.doc(col,id),{json:JSON.stringify(b),updated:b.updated,deleted:false,synced:F.serverTimestamp()});
+        else if(S.tomb[id])batch.set(F.doc(col,id),{json:'',updated:S.tomb[id],deleted:true,synced:F.serverTimestamp()});
+      });
+      await batch.commit();chunk.forEach(id=>delete S.dirty[id]);
+    }
+    if(S.dirty.goals){
+      if(!S.goalsAt)S.goalsAt=Date.now();
+      await F.setDoc(gref,{json:JSON.stringify(db.goals),updated:S.goalsAt,synced:F.serverTimestamp()});delete S.dirty.goals;
+    }
+    S.last=maxS;S.at=Date.now();syncMsg='';
+    try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}
+    if(changed&&ui.tab!=='settings'&&$('#sheet').hidden)render();
+    if(ui.tab==='settings'&&$('#sheet').hidden)render();
+    if(manual)toast('Synced.');
+  }catch(e){
+    const denied=e&&e.code==='permission-denied';
+    setMsg(denied?'Sync was refused. Check the Firestore rules in Firebase.':'Sync failed. It will try again later.');
+    if(manual)toast(denied?'Sync was refused. Check the Firestore rules.':'Sync failed. Try again in a moment.');
+  }
+  syncing=false;
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')scheduleSync()});
+window.addEventListener('online',scheduleSync);
 
 /* ---------- Wiring ---------- */
 function render(){
@@ -363,18 +481,23 @@ document.addEventListener('click',async e=>{
     case'scan':startScan();break;
     case'stopscan':stopScan();break;
     case'nocover':d.cover='';drawForm();break;
-    case'delbook':if(confirm('Delete this book? This cannot be undone.')){db.books=db.books.filter(b=>b.id!==d.id);save();closeForm();render();toast('Deleted')}break;
-    case'exportjson':download('shelf-backup-'+today()+'.json',JSON.stringify(db),'application/json');break;
+    case'delbook':if(confirm('Delete this book? This cannot be undone.')){db.books=db.books.filter(b=>b.id!==d.id);db.sync.tomb[d.id]=Date.now();db.sync.dirty[d.id]=1;save();closeForm();render();toast('Deleted')}break;
+    case'exportjson':download('shelf-backup-'+today()+'.json',JSON.stringify({books:db.books,goals:db.goals}),'application/json');break;
     case'exportcsv':exportCSV();break;
     case'persist':try{const ok=await navigator.storage.persist();toast(ok?'Browser will keep your data.':'Browser declined. Keep backups.')}catch(x){toast('Not supported here.')}break;
+    case'signin':doAuth('in');break;
+    case'signup':doAuth('up');break;
+    case'resetpw':doReset();break;
+    case'signout':doSignOut();break;
+    case'syncnow':sync(true);break;
     case'install':if(installEvt){installEvt.prompt();installEvt=null;render()}break;
-    case'wipe':if(confirm('Delete every book on this device?')&&confirm('Really delete everything? Export a backup first if unsure.')){db={books:[],goals:{}};save();render()}break;
+    case'wipe':if(confirm(st.user?'Delete every book here AND in your synced library?':'Delete every book on this device?')&&confirm('Really delete everything? Export a backup first if unsure.')){db.books.forEach(b=>{db.sync.tomb[b.id]=Date.now();db.sync.dirty[b.id]=1});db.books=[];db.goals={};db.sync.goalsAt=Date.now();db.sync.dirty.goals=1;save();render()}break;
   }
 });
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='q'){ui.q=t.value;const p=t.selectionStart;renderLibraryList()}
-  else if(t.id==='goal'){db.goals[new Date().getFullYear()]=+t.value||0;save()}
+  else if(t.id==='goal'){db.goals[new Date().getFullYear()]=+t.value||0;db.sync.goalsAt=Date.now();db.sync.dirty.goals=1;save()}
   else if(d&&t.dataset.f){const f=t.dataset.f;d[f]=f==='genres'?t.value.split(',').map(s=>s.trim()).filter(Boolean):(f==='cover'?t.value.trim():t.value)}
   else if(d&&t.dataset.read!==undefined){d.reads[+t.dataset.read][t.dataset.k]=t.value}
 });
@@ -388,7 +511,7 @@ document.addEventListener('change',async e=>{
   else if(t.id==='impjson'&&t.files[0]){importJSON(await t.files[0].text());t.value=''}
   else if(t.id==='impgr'&&t.files[0]){importGoodreads(await t.files[0].text());t.value=''}
 });
-load();render();
+load();render();if(db.sync.enabled)fbInit();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
