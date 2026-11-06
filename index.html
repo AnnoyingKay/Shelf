@@ -93,6 +93,11 @@ nav.tabs button.on .e{filter:none;opacity:1}
 .stat div{border-radius:16px}.stat b{font-family:var(--serif);font-size:28px}
 .months i{border-radius:6px 6px 0 0;background:var(--warm)}
 .toast{border-radius:14px;background:var(--ink);color:var(--bg)}
+#scan{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:14px;padding:24px 16px calc(32px + env(safe-area-inset-bottom))}
+#scan video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#scan .frame{position:absolute;left:10%;right:10%;top:32%;height:22%;border:3px solid #fffaf1;border-radius:16px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+#scan p{position:relative;color:#fffaf1;text-align:center;margin:0;font-size:15px}
+#scan .btn{position:relative}
 </style>
 </head>
 <body>
@@ -217,12 +222,13 @@ function openForm(id,pre){
   lookupRes=null;lookupMsg='';
   $('#sheet').hidden=false;drawForm();$('#sheet').scrollTop=0;
 }
-function closeForm(){$('#sheet').hidden=true;$('#sheet').innerHTML='';d=null}
+function closeForm(){stopScan();$('#sheet').hidden=true;$('#sheet').innerHTML='';d=null}
 function drawForm(keepScroll){
   const sc=$('#sheet').scrollTop;
   const rd=d.reads.map((r,i)=>`<div class="readrow"><div><label class="lbl">Started</label><input type="date" data-read="${i}" data-k="start" value="${esc(r.start)}"></div><div><label class="lbl">Finished</label><input type="date" data-read="${i}" data-k="end" value="${esc(r.end)}"></div><button class="btn d" data-delread="${i}" aria-label="Remove">✕</button></div>`).join('');
   $('#sheet').innerHTML=`<div class="bar-top"><button class="btn" data-act="close">Cancel</button><h2>${isNew?'Add book':'Edit book'}</h2><button class="btn p" data-act="savebook">Save</button></div>
   <div class="form">
+  ${isNew?'<div class="f"><button class="btn p" data-act="scan" style="width:100%">📷 Scan the barcode on the back of the book</button><div class="note">Works with the ISBN barcode on most printed books.</div></div>':''}
   <div class="f"><label>Title</label><input data-f="title" value="${esc(d.title)}" autocomplete="off"></div>
   <div class="f"><label>Author</label><input data-f="author" value="${esc(d.author)}" autocomplete="off"></div>
   <div class="f"><button class="btn" data-act="lookup" style="width:100%">Search online for details and cover</button><div class="note" id="lk">${esc(lookupMsg)}</div>
@@ -255,7 +261,7 @@ function saveBook(){
   const i=db.books.findIndex(b=>b.id===d.id);if(i>=0)db.books[i]=d;else db.books.push(d);
   save();closeForm();render();toast('Saved');
 }
-async function lookup(){
+async function lookup(auto){
   const q=d.isbn?'q=isbn:'+encodeURIComponent(d.isbn.replace(/[^0-9Xx]/g,'')):'title='+encodeURIComponent(d.title)+(d.author?'&author='+encodeURIComponent(d.author):'');
   if(!d.isbn&&!d.title.trim()){lookupMsg='Enter a title or ISBN first.';drawForm();return}
   lookupMsg='Searching…';drawForm();
@@ -263,7 +269,8 @@ async function lookup(){
     const r=await fetch('https://openlibrary.org/search.json?'+q+'&limit=8&fields=title,author_name,first_publish_year,number_of_pages_median,isbn,cover_i,subject');
     const j=await r.json();
     lookupRes=(j.docs||[]).map(x=>({title:x.title,author:(x.author_name||[]).join(', '),year:x.first_publish_year,pages:x.number_of_pages_median,isbn:(x.isbn||[]).find(i=>i.length===13)||(x.isbn||[])[0]||'',cover:x.cover_i?`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg`:'',subjects:(x.subject||[]).filter(s=>s.length<24).slice(0,3)}));
-    lookupMsg=lookupRes.length?'Tap a result to fill in the details.':'Nothing found. Try fewer words.';
+    if(auto&&lookupRes.length){pick(0);return}
+    lookupMsg=lookupRes.length?'Tap a result to fill in the details.':(auto?'Barcode read, but no match was found. The ISBN is saved. Add the title yourself.':'Nothing found. Try fewer words.');
   }catch(e){lookupRes=null;lookupMsg='Could not reach Open Library. Check your connection.'}
   if(d)drawForm();
 }
@@ -272,6 +279,30 @@ function pick(i){
   if(!d.genres.length)d.genres=r.subjects;lookupRes=null;lookupMsg='Details added.';drawForm();
 }
 function shrinkImage(file){return new Promise(res=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const w=300,h=Math.round(im.height*w/im.width),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.8))};im.onerror=()=>res('');im.src=u})}
+
+/* ---------- Barcode scanner ---------- */
+let scan=null;
+async function startScan(){
+  if(!('BarcodeDetector' in window)||!navigator.mediaDevices){toast('Barcode scanning is not supported in this browser. Type the ISBN instead.');return}
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})}
+  catch(e){toast('The camera was blocked. Allow camera access for this site in Chrome settings.');return}
+  const ov=document.createElement('div');ov.id='scan';
+  ov.innerHTML='<video playsinline muted></video><div class="frame"></div><p>Hold the barcode inside the box</p><button class="btn" data-act="stopscan">Cancel</button>';
+  document.body.appendChild(ov);
+  const v=ov.querySelector('video');v.srcObject=stream;
+  try{await v.play()}catch(e){}
+  const det=new BarcodeDetector({formats:['ean_13']});
+  scan={stream,ov,busy:false};
+  scan.timer=setInterval(async()=>{
+    if(scan.busy)return;scan.busy=true;
+    try{const r=await det.detect(v);const c=r.find(x=>/^97[89]\d{10}$/.test(x.rawValue));
+      if(c){stopScan();d.isbn=c.rawValue;if(navigator.vibrate)navigator.vibrate(60);drawForm();await lookup(true)}}
+    catch(e){}
+    if(scan)scan.busy=false;
+  },300);
+}
+function stopScan(){if(!scan)return;clearInterval(scan.timer);scan.stream.getTracks().forEach(t=>t.stop());scan.ov.remove();scan=null}
 
 /* ---------- Import / export ---------- */
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
@@ -329,6 +360,8 @@ document.addEventListener('click',async e=>{
     case'savebook':saveBook();break;
     case'addread':d.reads.push({start:'',end:''});drawForm();break;
     case'lookup':lookup();break;
+    case'scan':startScan();break;
+    case'stopscan':stopScan();break;
     case'nocover':d.cover='';drawForm();break;
     case'delbook':if(confirm('Delete this book? This cannot be undone.')){db.books=db.books.filter(b=>b.id!==d.id);save();closeForm();render();toast('Deleted')}break;
     case'exportjson':download('shelf-backup-'+today()+'.json',JSON.stringify(db),'application/json');break;
