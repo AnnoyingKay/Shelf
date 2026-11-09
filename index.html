@@ -617,8 +617,10 @@ function syncBox(){
   else if(!st.user)body=`<p class="note">Sign in to keep your library in step across your devices. Your books stay on this phone either way.</p>
     <div class="f"><input id="syEmail" type="email" autocomplete="username" placeholder="Email"></div>
     <div class="f"><input id="syPass" type="password" autocomplete="current-password" placeholder="Password (6 characters or more)"></div>
-    <div class="setrow"><button class="btn p" data-act="signin">Sign in</button><button class="btn" data-act="signup">Create account</button><button class="btn" data-act="resetpw">Forgot password</button></div>`;
-  else body=`<p class="note">Signed in as ${esc(st.user.email)}.<br><span id="syncStatus">${esc(syncMsg||(S.at?'Last synced '+new Date(S.at).toLocaleString('en-IE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Not synced yet.'))}</span></p>
+    <div class="setrow"><button class="btn p" data-act="signin">Sign in</button><button class="btn" data-act="signup">Create account</button><button class="btn" data-act="resetpw">Forgot password</button></div>
+    <div class="setrow"><button class="btn" data-act="google">Continue with Google</button></div>`;
+  else body=`<p class="note">Signed in as ${esc(st.user.email)}${st.user.emailVerified===false?' (not verified)':''}.<br><span id="syncStatus">${esc(syncMsg||(S.at?'Last synced '+new Date(S.at).toLocaleString('en-IE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Not synced yet.'))}</span></p>
+    ${st.user.emailVerified===false?'<p class="note">Please verify your email so titles given to you can reach you. Check your inbox, then tap I have verified.</p><div class="setrow"><button class="btn" data-act="resendv">Resend email</button><button class="btn" data-act="checkv">I have verified</button></div>':''}
     <div class="setrow"><button class="btn p" data-act="syncnow">Sync now</button><button class="btn" data-act="signout">Sign out</button></div>`;
   return `<div class="sec"><h3>Sync across devices</h3>${body}</div>`;
 }
@@ -630,7 +632,7 @@ async function doAuth(kind){
   const f=await fbInit();if(!f){toast(st.error||'Sync is not switched on yet.');return}
   const email=($('#syEmail').value||'').trim(),pw=$('#syPass').value||'';
   if(!email||!pw){toast('Enter your email and password.');return}
-  try{kind==='up'?await f.A.createUserWithEmailAndPassword(f.auth,email,pw):await f.A.signInWithEmailAndPassword(f.auth,email,pw)}
+  try{if(kind==='up'){const cr=await f.A.createUserWithEmailAndPassword(f.auth,email,pw);try{await f.A.sendEmailVerification(cr.user);toast('Account created. We sent you a verification email.')}catch(e){}}else await f.A.signInWithEmailAndPassword(f.auth,email,pw)}
   catch(e){toast(authErr(e))}
 }
 async function doReset(){
@@ -672,7 +674,8 @@ async function sync(manual){
     const mf=mergeFlags(db.flags||{},rem),mj=cj(mf);
     if(mj!==cj(db.flags||{})){db.flags=mf;db.flags.themes=db.flags.themes||{};db.flags.seen=db.flags.seen||{};dbVer++;changed=true}
     if(mj!==cj(rem||{}))await F.setDoc(pref,{json:mj,updated:Date.now(),synced:F.serverTimestamp()});
-    try{if(st.user.email){const gd=await F.getDoc(F.doc(fs,'grants',st.user.email.toLowerCase())),g=gd.exists()&&gd.data().titles,nw=Array.isArray(g)?g.slice().sort():[];if(cj(nw)!==cj(S.granted||[])){S.granted=nw;changed=true}}}catch(e){}
+    try{if(st.user.email){let ok=true;if(st.user.getIdTokenResult){let tr=await st.user.getIdTokenResult();if(!tr.claims.email_verified){try{await st.user.reload()}catch(e){}if(st.user.emailVerified)tr=await st.user.getIdTokenResult(true)}ok=!!tr.claims.email_verified}
+      if(ok){const gd=await F.getDoc(F.doc(fs,'grants',st.user.email.toLowerCase())),g=gd.exists()&&gd.data().titles,nw=Array.isArray(g)?g.slice().sort():[];if(cj(nw)!==cj(S.granted||[])){S.granted=nw;changed=true}}}}catch(e){}
     const ids=Object.keys(S.dirty).filter(k=>k!=='goals');
     for(let i=0;i<ids.length;i+=100){
       const chunk=ids.slice(i,i+100),batch=F.writeBatch(fs);
@@ -1240,6 +1243,22 @@ function giveFlair(){
 }
 function ungift(em,k){setGrant(em,((GRANTS&&GRANTS[em])||[]).filter(x=>x!==k))}
 
+/* ----- sign in with Google, and email verification ----- */
+async function doGoogle(){
+  const f=await fbInit();if(!f){toast(st.error||'Sync is not switched on yet.');return}
+  try{await f.A.signInWithPopup(f.auth,new f.A.GoogleAuthProvider())}
+  catch(e){const c=(e&&e.code)||'';toast(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request'?'Sign in cancelled.':c==='auth/unauthorized-domain'?'In Firebase, add annoyingkay.github.io under Authentication, Settings, Authorized domains.':c==='auth/operation-not-allowed'?'In Firebase, turn on Google under Authentication, Sign-in method.':c==='auth/popup-blocked'?'The sign in window was blocked. Allow pop-ups and try again.':authErr(e))}
+}
+async function resendVerify(){
+  if(!FB||!st.user)return;
+  try{await FB.A.sendEmailVerification(st.user);toast('Verification email sent. Check your inbox.')}catch(e){toast(e&&e.code==='auth/too-many-requests'?'Too many requests. Try again in a few minutes.':authErr(e))}
+}
+async function checkVerified(){
+  if(!FB||!st.user)return;
+  try{await st.user.reload();await st.user.getIdToken(true)}catch(e){}
+  if(st.user.emailVerified){toast('Email verified. Thank you.');render();sync(true)}else toast('Not verified yet. Open the link in the email first.');
+}
+
 /* ---------- Wiring ---------- */
 function render(){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
@@ -1286,6 +1305,9 @@ document.addEventListener('click',async e=>{
     case'exportjson':setFlag('exp');download('shelf-backup-'+today()+'.json',JSON.stringify({books:db.books,goals:db.goals}),'application/json');break;
     case'exportcsv':setFlag('exp');exportCSV();break;
     case'persist':try{const ok=await navigator.storage.persist();toast(ok?'Browser will keep your data.':'Browser declined. Keep backups.')}catch(x){toast('Not supported here.')}break;
+    case'google':doGoogle();break;
+    case'resendv':resendVerify();break;
+    case'checkv':checkVerified();break;
     case'signin':doAuth('in');break;
     case'signup':doAuth('up');break;
     case'resetpw':doReset();break;
