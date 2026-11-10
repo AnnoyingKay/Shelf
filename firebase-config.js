@@ -9,5 +9,5 @@ const firebaseConfig = {
     messagingSenderId: "137353564152",
     appId: "1:137353564152:web:5e78fb7a5d32cc5342d00d"
   };
-export const ownerUid = "RDxzDuNU76XlYDDEBBEG8UroEqo1"
+export const ownerUid = "YNOKHAbSVxUudg94P7O7UjI5rOJ3"
 export default firebaseConfig;
