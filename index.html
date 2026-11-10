@@ -552,7 +552,7 @@ function renderSettings(){
   if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(ui.tab==='settings')render()})}
   const y=new Date().getFullYear();
   $('#main').innerHTML=`<div class="sec"><h3>Reading goal for ${y}</h3><input id="goal" type="number" min="0" inputmode="numeric" placeholder="Books this year" value="${esc(db.goals[y]||'')}"></div>
-  ${syncBox()}${ownerBox()}
+  ${syncBox()}${pwBox()}${ownerBox()}
   <div class="sec"><h3>Theme</h3><div class="themes">${Object.entries(THEMES).map(([k,t])=>`<button data-theme-pick="${k}" class="${k===theme?'on':''}"><span style="font-size:22px">${t.icon}</span><b>${esc(t.name)}</b><span class="dots">${t.dots.map(c=>`<i style="background:${c}"></i>`).join('')}</span></button>`).join('')}</div></div>
   <div class="sec"><h3>Backup</h3><p class="note">Your books live only on this device. Export a backup now and then, and before clearing browser data or changing phone.</p>
   <div class="setrow"><button class="btn p" data-act="exportjson">Export backup (JSON)</button><button class="btn" data-act="exportcsv">Export CSV</button></div>
@@ -1381,6 +1381,49 @@ async function checkVerified(){
   if(st.user.emailVerified){toast('Email verified. Thank you.');render();sync(true)}else toast('Not verified yet. Open the link in the email first.');
 }
 
+/* ----- email links handled inside Shelf (verify email, reset password) and change password ----- */
+function actionParams(){try{const q=new URLSearchParams(location.search),m=q.get('mode'),c=q.get('oobCode');return m&&c?{mode:m,code:c}:null}catch(e){return null}}
+async function runAction(){
+  const a=actionParams();if(!a)return;
+  const ov=document.createElement('div');ov.className='tov';ov.id='act';document.body.appendChild(ov);
+  const show=h=>{ov.innerHTML=`<div class="tcard actc">${h}</div>`};
+  const clean=()=>{try{history.replaceState(null,'',location.pathname)}catch(e){}};
+  const close=()=>{ov.remove();clean();render()};
+  const done=(title,msg)=>{show(`<h2>${title}</h2><p class="note" style="margin:10px 0">${msg}</p><div class="setrow" style="justify-content:center"><button class="btn p" id="actx">Back to Shelf</button></div>`);ov.querySelector('#actx').onclick=close};
+  const fail=e=>{const c=(e&&e.code)||'';done('This link cannot be used',(c==='auth/expired-action-code'?'It has expired.':c==='auth/invalid-action-code'?'It was already used, or a newer email replaced it.':'Something went wrong ('+esc(c||'unknown')+').')+' Request a new email from Settings and use only the latest one.')};
+  show('<p class="note">One moment…</p>');
+  const f=await fbInit();
+  if(!f){done('Sync is not available','Shelf could not reach the sign in service. Check your connection and open the link again.');return}
+  if(a.mode==='verifyEmail'){
+    show(`<h2>Confirm your email</h2><p class="note" style="margin:10px 0">Tap the button to finish verifying your email address.</p><div class="setrow" style="justify-content:center"><button class="btn p" id="actgo">Confirm my email</button></div>`);
+    ov.querySelector('#actgo').onclick=async()=>{
+      try{await f.A.applyActionCode(f.auth,a.code)}catch(e){fail(e);return}
+      try{if(f.auth.currentUser){await f.auth.currentUser.reload();await f.auth.currentUser.getIdToken(true)}}catch(e){}
+      done('Email verified','Thank you. You can carry on in Shelf.');
+    };
+  }else if(a.mode==='resetPassword'){
+    let email;try{email=await f.A.verifyPasswordResetCode(f.auth,a.code)}catch(e){fail(e);return}
+    show(`<h2>Choose a new password</h2><p class="note" style="margin:10px 0">For ${esc(email)}</p><div class="f"><input id="np1" type="password" autocomplete="new-password" placeholder="New password (6 characters or more)"></div><div class="f"><input id="np2" type="password" autocomplete="new-password" placeholder="Type it again"></div><div class="setrow" style="justify-content:center"><button class="btn p" id="actgo">Save new password</button></div>`);
+    ov.querySelector('#actgo').onclick=async()=>{
+      const p1=ov.querySelector('#np1').value,p2=ov.querySelector('#np2').value;
+      if(p1.length<6){toast('Use at least 6 characters.');return}
+      if(p1!==p2){toast('The two passwords do not match.');return}
+      try{await f.A.confirmPasswordReset(f.auth,a.code,p1)}catch(e){fail(e);return}
+      done('Password changed','Sign in with your new password in Settings.');
+    };
+  }else{fail({code:'unsupported'})}
+}
+function pwBox(){
+  if(!st.user||!(st.user.providerData||[]).some(p=>p.providerId==='password'))return'';
+  return`<div class="sec"><h3>Change password</h3><div class="f"><input id="pwOld" type="password" autocomplete="current-password" placeholder="Current password"></div><div class="f"><input id="pwNew" type="password" autocomplete="new-password" placeholder="New password (6 characters or more)"></div><div class="setrow"><button class="btn" data-act="chpw">Change password</button></div></div>`;
+}
+async function changePw(){
+  const o=$('#pwOld').value,n=$('#pwNew').value;
+  if(!o||n.length<6){toast('Enter your current password and a new one of 6 characters or more.');return}
+  try{const A=FB.A;await A.reauthenticateWithCredential(st.user,A.EmailAuthProvider.credential(st.user.email,o));await A.updatePassword(st.user,n);toast('Password changed.');$('#pwOld').value='';$('#pwNew').value=''}
+  catch(e){const c=(e&&e.code)||'';toast(c==='auth/wrong-password'||c==='auth/invalid-credential'?'The current password is not right.':c==='auth/requires-recent-login'?'Sign out and in again, then try once more.':authErr(e))}
+}
+
 /* ---------- Wiring ---------- */
 function render(){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
@@ -1427,6 +1470,7 @@ document.addEventListener('click',async e=>{
     case'exportjson':setFlag('exp');download('shelf-backup-'+today()+'.json',JSON.stringify({books:db.books,goals:db.goals}),'application/json');break;
     case'exportcsv':setFlag('exp');exportCSV();break;
     case'persist':try{const ok=await navigator.storage.persist();toast(ok?'Browser will keep your data.':'Browser declined. Keep backups.')}catch(x){toast('Not supported here.')}break;
+    case'chpw':changePw();break;
     case'google':doGoogle();break;
     case'resendv':resendVerify();break;
     case'checkv':checkVerified();break;
@@ -1456,7 +1500,7 @@ document.addEventListener('change',async e=>{
   else if(t.id==='impjson'&&t.files[0]){importJSON(await t.files[0].text());t.value=''}
   else if(t.id==='impgr'&&t.files[0]){importGoodreads(await t.files[0].text());t.value=''}
 });
-load();noteTheme(theme);{const m=document.querySelector('meta[name=theme-color]');if(m)m.content=T().meta}render();if(db.sync.enabled)fbInit();
+load();noteTheme(theme);{const m=document.querySelector('meta[name=theme-color]');if(m)m.content=T().meta}render();if(db.sync.enabled)fbInit();runAction();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
