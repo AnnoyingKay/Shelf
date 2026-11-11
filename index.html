@@ -592,6 +592,25 @@ header.top.lib{position:relative;border-bottom:0}
 .mcard{position:relative;overflow:hidden;min-height:58px}
 .mcard>*:not(.mpic){position:relative;z-index:1}
 .mpic{position:absolute;right:-6px;bottom:-14px;font-style:normal;font-size:64px;line-height:1;opacity:.28;transform:rotate(-8deg);pointer-events:none}
+.mfav{display:flex;gap:6px;margin-top:6px;position:relative;z-index:1}
+.mbk{position:relative;display:inline-flex;align-items:center;justify-content:center;width:26px;height:38px;border-radius:3px;overflow:hidden;background:rgba(0,0,0,.18);box-shadow:0 1px 3px rgba(0,0,0,.3);flex:none}
+.mbk em{font-style:normal;font-weight:700;font-size:13px;opacity:.8}
+.mbk img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.favrow,.favres{display:flex;align-items:center;gap:10px;width:100%;padding:6px 0;text-align:left;background:none;border:0;color:var(--ink);font:inherit}
+.favres{border-top:1px solid var(--line)}
+.ft{flex:1;display:flex;flex-direction:column;min-width:0}.ft b{font-size:14px}.ft small{opacity:.7}
+.favrow .x{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:50%;width:30px;height:30px}
+#pvcard{margin-bottom:10px}
+#hhShow{width:auto;flex:none;margin:0}
+label.note:has(#hhShow){text-align:left;justify-content:flex-start}
+.tgroup{border-top:1px solid var(--line);padding:8px 0}
+.tgroup:first-of-type{border-top:0}
+.tgroup summary{display:flex;justify-content:space-between;align-items:center;cursor:pointer;list-style:none;padding:6px 0}
+.tgroup summary::-webkit-details-marker{display:none}
+.tgroup summary::after{content:"▾";margin-left:8px;opacity:.6}
+.tgroup:not([open]) summary::after{content:"▸"}
+.tgroup summary b{flex:1}
+.tgroup .themes{margin-top:6px}
 </style>
 </head>
 <body>
@@ -602,6 +621,7 @@ header.top.lib{position:relative;border-bottom:0}
   <button data-tab="library" class="on"><span class="e">📚</span>Library</button>
   <button data-tab="stats"><span class="e">🌿</span>Stats</button>
   <button data-tab="trophies"><span class="e">🏆</span>Trophies</button>
+  <button data-tab="profile"><span class="e">👤</span>Profile</button>
   <button data-tab="settings"><span class="e">☕</span>Settings</button>
 </nav>
 <div id="sheet" class="sheet" hidden></div>
@@ -732,14 +752,14 @@ function renderStats(){
 }
 
 /* ---------- Settings ---------- */
-let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(ui.tab==='settings')render()});
+let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
 function renderSettings(){
   $('#tools').innerHTML='';
-  if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(ui.tab==='settings')render()})}
+  if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(stab())render()})}
   const y=new Date().getFullYear();
   $('#main').innerHTML=`<div class="sec"><h3>Reading goal for ${y}</h3><input id="goal" type="number" min="0" inputmode="numeric" placeholder="Books this year" value="${esc(db.goals[y]||'')}"></div>
-  ${syncBox()}${pwBox()}${ownerBox()}
-  <div class="sec"><h3>Theme</h3><div class="themes">${Object.entries(THEMES).map(([k,t])=>{const lk=themeLock(k);return`<button data-theme-pick="${k}" ${lk?`data-lock="${esc(lk)}" `:''}class="${k===theme?'on':''}${lk?' lock':''}"><span style="font-size:22px">${lk?'🔒':t.icon}</span><b>${esc(t.name)}</b>${lk?`<small class="lk">${esc(lk)}</small>`:`<span class="dots">${t.dots.map(c=>`<i style="background:${c}"></i>`).join('')}</span>`}</button>`}).join('')}</div></div>
+  ${syncBox()}${pwBox()}
+  
   <div class="sec"><h3>Backup</h3><p class="note">Your books live only on this device. Export a backup now and then, and before clearing browser data or changing phone.</p>
   <div class="setrow"><button class="btn p" data-act="exportjson">Export backup (JSON)</button><button class="btn" data-act="exportcsv">Export CSV</button></div>
   <div class="setrow"><label class="btn">Import backup<input type="file" id="impjson" accept=".json,application/json" hidden></label></div></div>
@@ -894,7 +914,7 @@ async function fbInit(){
     const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
     const a=app.initializeApp(cfg);
     FB={auth:auth.getAuth(a),fs:fs.getFirestore(a),A:auth,F:fs};
-    FB.A.onAuthStateChanged(FB.auth,u=>{st.user=u;st.ready=true;if(u)onSignedIn(u);if(ui.tab==='settings')render()});
+    FB.A.onAuthStateChanged(FB.auth,u=>{st.user=u;st.ready=true;if(u)onSignedIn(u);if(stab())render()});
     st.error='';
   }catch(e){FB=null;st.error='Could not load the sync service. Check your connection.';st.tried=false}
   return FB;
@@ -919,7 +939,7 @@ function syncBox(){
   else body=`<p class="note">Signed in as ${esc(st.user.email)}${st.user.emailVerified===false?' (not verified)':''}.<br><span id="syncStatus">${esc(syncMsg||(S.at?'Last synced '+new Date(S.at).toLocaleString('en-IE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Not synced yet.'))}</span></p>
     ${st.user.emailVerified===false?'<p class="note">Please verify your email so titles given to you can reach you. Check your inbox, then tap I have verified.</p><div class="setrow"><button class="btn" data-act="resendv">Resend email</button><button class="btn" data-act="checkv">I have verified</button></div>':''}
     <div class="setrow"><button class="btn p" data-act="syncnow">Sync now</button><button class="btn" data-act="signout">Sign out</button></div>`;
-  return `<div class="sec"><h3>Sync across devices</h3>${body}${hhMsg?'<p class="note">'+esc(hhMsg)+'</p>':''}</div>`+householdBox();
+  return `<div class="sec"><h3>Sync across devices</h3>${body}${hhMsg?'<p class="note">'+esc(hhMsg)+'</p>':''}</div>`;
 }
 function authErr(e){
   const c=(e&&e.code)||'';
@@ -990,8 +1010,8 @@ async function sync(manual){
     }
     S.last=maxS;S.at=Date.now();syncMsg='';
     try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}
-    if(changed&&ui.tab!=='settings'&&$('#sheet').hidden)render();
-    if(ui.tab==='settings'&&$('#sheet').hidden)render();
+    if(changed&&!stab()&&$('#sheet').hidden)render();
+    if(stab()&&$('#sheet').hidden)render();
     if(manual)toast('Synced.');
   }catch(e){
     const denied=e&&e.code==='permission-denied';
@@ -1229,7 +1249,7 @@ function levelsNow(){
 }
 function candDates(){
   const s=new Set();myBooks().forEach(b=>{if(b.rep)return;s.add(b.added);b.reads.forEach(r=>{s.add(r.start);s.add(r.end)})});
-  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl'&&k!=='tbest'&&k!=='card'&&k!=='dd'&&k!=='nick')s.add(f[k])});
+  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl'&&k!=='tbest'&&k!=='card'&&k!=='dd'&&k!=='nick'&&k!=='favs')s.add(f[k])});
   let a=[...s].filter(x=>/^\d{4}-\d\d-\d\d$/.test(x)).sort();
   if(a.length>240){const k=Math.ceil(a.length/240),b=[];for(let i=k-1;i<a.length;i+=k)b.push(a[i]);if(b[b.length-1]!==a[a.length-1])b.push(a[a.length-1]);a=b}
   return a;
@@ -1517,7 +1537,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -1599,7 +1619,7 @@ document.addEventListener('change',e=>{
 });
 function pickTitle(kind,v){
   const t=ttl();if(kind==='rank')t.rank=+v;else t.flair=v;t.at=Date.now();persistLocal();scheduleSync();
-  const sc=document.querySelector('#tdet .tcard');const y=sc?sc.scrollTop:0;openTitles();const n=document.querySelector('#tdet .tcard');if(n)n.scrollTop=y;refreshChips();
+  if(ui.tab==='profile')renderProfile(true);else{const sc=document.querySelector('#tdet .tcard');const y=sc?sc.scrollTop:0;openTitles();const n=document.querySelector('#tdet .tcard');if(n)n.scrollTop=y}refreshChips();
 }
 /* merge synced preferences (trophy flags, seen marks, titles) from two devices */
 const cj=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
@@ -1618,7 +1638,7 @@ function mergeFlags(a,b){
       new Set([...Object.keys(x),...Object.keys(y)]).forEach(i=>{v[i]=(k==='seen'||k==='tbest')?Math.max(+x[i]||0,+y[i]||0):(!x[i]?y[i]:!y[i]?x[i]:(x[i]<y[i]?x[i]:y[i]))});
     }else if(k==='title')v=mergeTitle(a[k],b[k]);
     else if(k==='dd'){const x=a[k]||'',y=b[k]||'';v=x>y?x:y}
-    else if(k==='nick'||k==='card'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
+    else if(k==='nick'||k==='card'||k==='favs'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
     else{const x=a[k],y=b[k];v=!x?y:!y?x:(x<y?x:y)}
     if(v!==undefined)o[k]=v;
   });
@@ -1664,7 +1684,7 @@ async function loadGrants(){
   grantLoading=true;
   try{const F=FB.F,q=await F.getDocs(F.query(F.collection(FB.fs,'grants')));GRANTS={};q.forEach(d=>{GRANTS[d.id]=(d.data().titles||[])})}
   catch(e){GRANTS={};toast('Could not read the grants list. Check the Firestore rules.')}
-  grantLoading=false;if(ui.tab==='settings'&&$('#sheet').hidden)render();
+  grantLoading=false;if(stab()&&$('#sheet').hidden)render();
 }
 function ownerBox(){
   if(!st.user)return'';
@@ -1754,10 +1774,10 @@ const psig=b=>JSON.stringify([b.status,b.rating,b.review,b.notes,b.reads,b.progr
 const cardCfg=()=>db.flags.card||{};
 const cardTheme=()=>{const c=cardCfg().c;return c&&THEMES[c]?c:theme};
 const cardOn=()=>cardCfg().on!==0;
-function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};if(cardOn()){const m=mine(trophyState());c.r=m.rank;c.f=m.flair||'';c.t=m.n}return c}
-const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''));
+function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};{const fb=favBooks();if(fb.length)c.b=fb.map(favSmall)}if(cardOn()){const m=mine(trophyState());c.r=m.rank;c.f=m.flair||'';c.t=m.n}return c}
+const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''))&&JSON.stringify((a||{}).b||[])===JSON.stringify((b||{}).b||[]);
 function cardHTML(c,you){const T=THEMES[c.k]||THEMES.nook,d=T.dots,h=d[2].replace('#',''),L=h.length===6?(0.299*parseInt(h.slice(0,2),16)+0.587*parseInt(h.slice(2,4),16)+0.114*parseInt(h.slice(4,6),16)):255,tx=L>140?'#2b2118':'#f5efe6';
-  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
+  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}${c.b&&c.b.length?`<div class="mfav">${c.b.slice(0,3).map(miniBook).join('')}</div>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
 let HH=null,hhBusy=false,hhInv=[],hhMsg='';
 function hhTouch(b){
   const S=db.sync;if(!S.hid)return;S.hdirty=S.hdirty||{};
@@ -1868,12 +1888,8 @@ function householdBox(){
     const pf=HH.profiles||{},names=HH.names||{};
     const cards=HH.members.map(m=>m===st.user.uid?cardHTML(myCard(),1):cardHTML(Object.assign({n:names[m]},pf[m]||{}),0)).join('');
     const inv=(HH.invited||[]).map(e=>`<span class="hhinv">${esc(e)} <button class="x" data-act="hhuninv" data-e="${esc(e)}" aria-label="Cancel invitation">✕</button></span>`).join(' ');
-    const opts=Object.keys(THEMES).filter(id=>!themeLock(id)).map(id=>`<option value="${id}"${id===cardTheme()?' selected':''}>${esc((THEMES[id].icon||'')+' '+THEMES[id].name)}</option>`).join('');
     b=`<div class="mcards">${cards}</div>
     <p class="note">Titles, authors, covers, tags, formats, editions and release dates are shared. Status, dates, ratings, notes, copies, purchase dates, trophies and stats stay your own. A shared book only counts for you once you have added your own status, dates or rating.</p>
-    <h3 style="margin-top:14px">Your card</h3>
-    <div class="f"><label>Card colours</label><select id="hhColour">${opts}</select></div>
-    <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hhShow"${cardOn()?' checked':''}> Show my rank, title and trophies to my household</label>
     ${inv?`<p class="note" style="margin-top:10px">Waiting to join: ${inv}</p>`:''}
     <div class="f" style="margin-top:10px"><input id="hhEmail" type="email" placeholder="Email address to invite"></div>
     <div class="setrow"><button class="btn p" data-act="hhinvite">Invite</button><button class="btn" data-act="hhrename">Rename</button><button class="btn" data-act="hhleave">Leave household</button></div>`;
@@ -1990,13 +2006,92 @@ function doodleCard(){
   return`<div class="ddcard${d.special?' sp':''}">${DSV(d.svg)}<p>${esc(d.line)}</p><button class="ddx" data-act="ddhide" aria-label="Hide">×</button></div>`;
 }
 
+/* ---------- Profile tab ---------- */
+const stab=()=>ui.tab==='settings'||ui.tab==='profile';
+const favIds=()=>{const f=db.flags.favs;return f&&Array.isArray(f.ids)?f.ids:[]};
+const favBooks=()=>favIds().map(id=>db.books.find(b=>b.id===id&&b.pr!==false)).filter(Boolean).slice(0,3);
+const favCover=b=>/^https?:\/\//.test(b.cover||'')&&b.cover.length<=200?b.cover:'';
+const favSmall=b=>({t:String(b.title||'').slice(0,60),c:favCover(b)});
+function miniBook(b){return`<span class="mbk" title="${esc(b.t||b.title||'')}">${b.c?`<img src="${esc(b.c)}" alt="" onerror="this.remove()">`:''}<em>${esc(String(b.t||b.title||'?').charAt(0))}</em></span>`}
+function favSave(ids){db.flags.favs={ids:ids.slice(0,3),at:Date.now()};persistLocal();scheduleSync();if(typeof sync==='function')sync(true);renderProfile(true)}
+function favAdd(id){const ids=favIds();if(ids.length>=3||ids.includes(id))return;favSave(ids.concat(id))}
+function favDel(id){favSave(favIds().filter(x=>x!==id))}
+function favBox(){
+  const bs=favBooks();
+  return`<div class="sec"><h3>Favourite books</h3><p class="note">Pick up to three. They appear small on your card.</p>
+  ${bs.map(b=>`<div class="favrow">${miniBook(favSmall(b))}<span class="ft"><b>${esc(b.title)}</b><small>${esc(b.author)}</small></span><button class="x" data-act="favdel" data-id="${esc(b.id)}" aria-label="Remove ${esc(b.title)}">✕</button></div>`).join('')}
+  ${bs.length<3?`<div class="f" style="margin-top:8px"><input id="favq" type="search" placeholder="Search your books to add a favourite" autocomplete="off"></div><div id="favres"></div>`:'<p class="note">That is three. Remove one to pick another.</p>'}</div>`;
+}
+function favFill(){
+  const el=$('#favres'),q=($('#favq')||{}).value||'';if(!el)return;
+  const s=q.trim().toLowerCase(),ids=favIds();
+  if(!s){el.innerHTML='';return}
+  const l=myBooks().filter(b=>!ids.includes(b.id)&&[b.title,b.author,b.series].join(' ').toLowerCase().includes(s)).slice(0,6);
+  el.innerHTML=l.length?l.map(b=>`<button class="favres" data-act="favadd" data-id="${esc(b.id)}">${miniBook(favSmall(b))}<span class="ft"><b>${esc(b.title)}</b><small>${esc(b.author)}</small></span><span class="note">Add</span></button>`).join(''):'<p class="note">No book matches that.</p>';
+}
+function titleLists(){
+  const S=trophyState(),m=mine(S),names=RANKS[theme]||RANKS.nook,nxt=RK[m.cur+1];
+  const rrows=names.map((nm,i)=>{const open=i<=m.cur;return`<button class="trow${i===m.r?' on':''}"${open?` data-rank="${i}"`:' disabled'}><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':open?RK[i]+' trophies':(RK[i]-m.n)+' to go'}</span></button>`}).join('');
+  const frows=`<button class="trow${m.flair?'':' on'}" data-flair=""><span>No flair</span><span class="note">${m.flair?'':'Equipped'}</span></button>`+m.fe.map(f=>`<button class="trow${f.n===m.flair?' on':''}" data-flair="${f.k}"><span>${esc(f.n)}</span><span class="note">${f.n===m.flair?'Equipped':f.ok(S)?esc(f.sub||(TBY[f.id]?TBY[f.id].n:'')):'Gifted'}</span></button>`).join('');
+  return`<div class="sec"><h3>Rank</h3><p class="note">${m.n} trophies${nxt?` · next rank at ${nxt}`:' · top rank reached'}. Your rank moves up by itself as you earn trophies. You can switch to any rank you have already reached.</p><div class="tlist">${rrows}</div></div>
+  <div class="sec"><h3>Flair</h3><p class="note">${m.fe.length?'Earned from specific trophies, or given to you. Pick one to show next to your rank.':'Flair titles are earned from specific trophies. Your first one will appear here.'}</p><div class="tlist">${frows}</div></div>`;
+}
+function cardBox(){
+  const c=cardCfg(),opts=themeGroups().map(g=>{const o=g.ids.filter(id=>!themeLock(id)).map(id=>`<option value="${id}"${id===cardTheme()?' selected':''}>${esc((THEMES[id].icon||'')+' '+THEMES[id].name)}</option>`).join('');return o?`<optgroup label="${esc(g.name)}">${o}</optgroup>`:''}).join('');
+  return`<div class="sec"><h3>Your card</h3><div id="pvcard" class="mcards"></div>
+  <div class="f"><label>Nickname</label><input id="nick" maxlength="20" placeholder="Optional, up to 20 characters" value="${esc(nickOf())}" autocomplete="off"></div>
+  <div class="f"><label>Card colours</label><select id="hhColour">${opts}</select></div>
+  <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hhShow"${cardOn()?' checked':''}> Show my rank, title and trophies on my card</label></div>`;
+}
+function refreshPreview(){const p=$('#pvcard');if(p)p.innerHTML=cardHTML(myCard(),1)}
+function renderProfile(keep){
+  const y=window.scrollY;
+  $('#tools').innerHTML='';
+  if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(stab())render()})}
+  $('#main').innerHTML=`${cardBox()}${favBox()}${titleLists()}${householdBox()}${themeBox()}${ownerBox()}`;
+  refreshPreview();
+  if(keep)window.scrollTo(0,y);
+}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='favq')favFill()});
+document.addEventListener('change',e=>{
+  const t=e.target;if(!t||ui.tab!=='profile')return;
+  if(t.id==='nick'||t.id==='hhColour'||t.id==='hhShow')setTimeout(refreshPreview,0);
+});
+
+/* ---------- Theme groups (add new theme ids to a group here) ---------- */
+const THEME_GROUPS=[
+ {id:'everyday',name:'Everyday',note:'Calm, general purpose looks.',ids:['nook','meadow','cat','toys']},
+ {id:'genre',name:'By genre',note:'Unlocked by reading that kind of book.',ids:['fantasy','scifi','gothic','comic','frontier','regency']},
+ {id:'games',name:'Games',note:'Pixel and console looks.',ids:['crystal','save','spawn','bonus']},
+ {id:'seasonal',name:'Seasonal',note:'Open Shelf during the month to unlock, and keep it for good.',ids:['patrick','brigid','valentine','hallow','sobremesa','yule']}
+];
+function themeBtn(k){const t=THEMES[k],lk=themeLock(k);
+ return`<button data-theme-pick="${k}" ${lk?`data-lock="${esc(lk)}" `:''}class="${k===theme?'on':''}${lk?' lock':''}"><span style="font-size:22px">${lk?'🔒':t.icon}</span><b>${esc(t.name)}</b>${lk?`<small class="lk">${esc(lk)}</small>`:`<span class="dots">${t.dots.map(c=>`<i style="background:${c}"></i>`).join('')}</span>`}</button>`}
+function themeGroups(){
+  const seen=new Set(),gs=THEME_GROUPS.map(g=>({...g,ids:g.ids.filter(k=>THEMES[k])}));
+  gs.forEach(g=>g.ids.forEach(k=>seen.add(k)));
+  const rest=Object.keys(THEMES).filter(k=>!seen.has(k));
+  if(rest.length)gs.push({id:'more',name:'More',note:'',ids:rest});
+  return gs.filter(g=>g.ids.length);
+}
+function themeBox(){
+  const open=ui.thOpen||(ui.thOpen={});
+  const body=themeGroups().map(g=>{
+    const ids=g.ids.slice().sort((a,b)=>(themeLock(a)?1:0)-(themeLock(b)?1:0)),un=ids.filter(k=>!themeLock(k)).length;
+    const isOpen=open[g.id]!==undefined?open[g.id]:ids.includes(theme);
+    return`<details class="tgroup" data-g="${g.id}"${isOpen?' open':''}><summary><b>${esc(g.name)}</b><span class="note">${un} of ${ids.length} unlocked</span></summary>${g.note?`<p class="note">${esc(g.note)}</p>`:''}<div class="themes">${ids.map(themeBtn).join('')}</div></details>`;
+  }).join('');
+  return`<div class="sec"><h3>Theme</h3>${body}</div>`;
+}
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.classList.contains('tgroup')){(ui.thOpen||(ui.thOpen={}))[d.dataset.g]=d.open}},true);
+
 /* ---------- Wiring ---------- */
 function render(){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
-  $('#ttl').textContent={library:T().title,stats:T().stats,trophies:T().troph||'Trophies',settings:'Settings'}[ui.tab];
-  document.querySelectorAll('nav.tabs .e').forEach((e,i)=>e.textContent=T().nav[i]);
+  $('#ttl').textContent={library:T().title,stats:T().stats,trophies:T().troph||'Trophies',profile:'Profile',settings:'Settings'}[ui.tab];
+  document.querySelectorAll('nav.tabs .e').forEach((e,i)=>{const nv=T().nav.slice();nv.splice(3,0,'👤');e.textContent=nv[i]});
   $('#fab').hidden=ui.tab!=='library';document.querySelector('header.top').classList.toggle('lib',ui.tab==='library');bellDot();
-  ({library:renderLibrary,stats:renderStats,trophies:renderTrophies,settings:renderSettings})[ui.tab]();
+  ({library:renderLibrary,stats:renderStats,trophies:renderTrophies,profile:renderProfile,settings:renderSettings})[ui.tab]();
   if(ui.tab!=='trophies')updateDot();
 }
 document.addEventListener('click',async e=>{
@@ -2028,7 +2123,9 @@ document.addEventListener('click',async e=>{
     case'stopscan':stopScan();break;
     case'nocover':d.cover='';drawForm();break;
     case'delbook':{const hb=db.books.find(b=>b.id===d.id),hs=hb&&hb.hh&&db.sync.hid;if(confirm(hs?'Delete this book for everyone in your household? This cannot be undone.':'Delete this book? This cannot be undone.')){if(hb)hhDelete(hb);db.books=db.books.filter(b=>b.id!==d.id);db.sync.tomb[d.id]=Date.now();db.sync.dirty[d.id]=1;save();closeForm();render();toast('Deleted')}break}
-    case'titles':openTitles();break;
+    case'titles':ui.tab='profile';render();window.scrollTo(0,0);break;
+    case'favadd':favAdd(ds.id);break;
+    case'favdel':favDel(ds.id);break;
     case'gift':giveFlair();break;
     case'ungift':ungift(ds.e,ds.k);break;
     case'tclose':$('#tdet').hidden=true;break;
