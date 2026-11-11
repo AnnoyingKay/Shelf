@@ -14,6 +14,9 @@ Marks books "On repeat" for children's books or favourites read again and again.
 Shows yearly and monthly stats, a reading goal, and a list of finished books that have no finish date. A finished book needs a finish date to count towards stats, goals and trophies. Trophies already earned are kept.
 Awards trophies and ranks, with a bell for notices.
 Offers themes. Some are open from the start and the rest unlock as you read, depending on what you read. Hallowe'en and Yule stay unlocked once earned.
+Seasonal themes unlock by opening Shelf during their month and stay unlocked once earned: Sobremesa (October), St Brigid and St Valentine (February), St Patrick (March), as well as Hallowe'en and Yuletide.
+Shows a small daily greeting on the Library page, once a day and once across your devices. Most days in the current batch carry a small original drawing and a dry line about the date, and quiet days get a plain greeting.
+One bell for notices, split into Activity (trophies, ranks, titles, themes, households) and News (welcome and update notes), each type with its own fixed icon.
 Imports from Goodreads CSV and exports a CSV or a JSON backup.
 Works offline once installed, and can be added to the home screen.
 Where your data lives
@@ -40,6 +43,10 @@ index.html	The whole app: markup, styles and script.
 sw.js	Service worker for offline use. The cache name changes with each release.
 firebase-config.js	Your Firebase project settings. Only needed for sync. Not replaced when updating.
 firestore.rules	Security rules to paste into Firestore.
+Daily greetings
+
+The greetings, drawings and DOODLE_END date live near the end of the script in index.html. Each batch covers about two months. A weekly GitHub workflow (.github/workflows/doodle-reminder.yml) reads DOODLE_END and opens an issue when fewer than 14 days remain. Add the next batch, change the DOODLE_END date, upload index.html, then close the issue.
+
 Updating
 Replace index.html and sw.js in the repository. Leave firebase-config.js alone.
 Wait a minute for GitHub Pages to publish.
