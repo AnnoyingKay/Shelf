@@ -589,6 +589,9 @@ header.top.lib{position:relative;border-bottom:0}
 .pgb button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 16px;font-size:14px}
 .pgb button:disabled{opacity:.4}
 .pgs{font-size:13px;display:flex;align-items:center;gap:8px}
+.mcard{position:relative;overflow:hidden;min-height:58px}
+.mcard>*:not(.mpic){position:relative;z-index:1}
+.mpic{position:absolute;right:-6px;bottom:-14px;font-style:normal;font-size:64px;line-height:1;opacity:.28;transform:rotate(-8deg);pointer-events:none}
 </style>
 </head>
 <body>
@@ -1754,7 +1757,7 @@ const cardOn=()=>cardCfg().on!==0;
 function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};if(cardOn()){const m=mine(trophyState());c.r=m.rank;c.f=m.flair||'';c.t=m.n}return c}
 const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''));
 function cardHTML(c,you){const T=THEMES[c.k]||THEMES.nook,d=T.dots,h=d[2].replace('#',''),L=h.length===6?(0.299*parseInt(h.slice(0,2),16)+0.587*parseInt(h.slice(2,4),16)+0.114*parseInt(h.slice(4,6),16)):255,tx=L>140?'#2b2118':'#f5efe6';
-  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}</div>`}
+  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
 let HH=null,hhBusy=false,hhInv=[],hhMsg='';
 function hhTouch(b){
   const S=db.sync;if(!S.hid)return;S.hdirty=S.hdirty||{};
@@ -1865,7 +1868,7 @@ function householdBox(){
     const pf=HH.profiles||{},names=HH.names||{};
     const cards=HH.members.map(m=>m===st.user.uid?cardHTML(myCard(),1):cardHTML(Object.assign({n:names[m]},pf[m]||{}),0)).join('');
     const inv=(HH.invited||[]).map(e=>`<span class="hhinv">${esc(e)} <button class="x" data-act="hhuninv" data-e="${esc(e)}" aria-label="Cancel invitation">✕</button></span>`).join(' ');
-    const opts=Object.keys(THEMES).filter(id=>!themeLock(id)).map(id=>`<option value="${id}"${id===cardTheme()?' selected':''}>${esc(THEMES[id].name)}</option>`).join('');
+    const opts=Object.keys(THEMES).filter(id=>!themeLock(id)).map(id=>`<option value="${id}"${id===cardTheme()?' selected':''}>${esc((THEMES[id].icon||'')+' '+THEMES[id].name)}</option>`).join('');
     b=`<div class="mcards">${cards}</div>
     <p class="note">Titles, authors, covers, tags, formats, editions and release dates are shared. Status, dates, ratings, notes, copies, purchase dates, trophies and stats stay your own. A shared book only counts for you once you have added your own status, dates or rating.</p>
     <h3 style="margin-top:14px">Your card</h3>
