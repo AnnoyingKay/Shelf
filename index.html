@@ -611,6 +611,8 @@ label.note:has(#hhShow){text-align:left;justify-content:flex-start}
 .tgroup:not([open]) summary::after{content:"▸"}
 .tgroup summary b{flex:1}
 .tgroup .themes{margin-top:6px}
+nav.tabs button[hidden]{display:none}
+.bell{z-index:8}
 </style>
 </head>
 <body>
@@ -622,6 +624,7 @@ label.note:has(#hhShow){text-align:left;justify-content:flex-start}
   <button data-tab="stats"><span class="e">🌿</span>Stats</button>
   <button data-tab="trophies"><span class="e">🏆</span>Trophies</button>
   <button data-tab="profile"><span class="e">👤</span>Profile</button>
+  <button data-tab="household" hidden><span class="e">🏠</span>Household</button>
   <button data-tab="settings"><span class="e">☕</span>Settings</button>
 </nav>
 <div id="sheet" class="sheet" hidden></div>
@@ -1537,7 +1540,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. A Household tab appears once you start or join a household. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -1852,7 +1855,7 @@ async function hhAct(kind,arg){
       await F.setDoc(ref,{name:nm,members:[u.uid],invited:[],names:{[u.uid]:hhName()},profiles:{[u.uid]:card},created:Date.now()});
       S.hid=ref.id;S.hlast=0;
       if(myBooks().length&&confirm('Add the '+myBooks().length+' books on this shelf to the shared library? Choose Cancel to keep them private.'))hhShareAll();else db.books.forEach(b=>b.np=1);
-      toast('Household started.');
+      toast('Household started.');ui.tab='household';
     }else if(kind==='invite'){
       const e=(arg||'').trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)){toast('That email address does not look right.');hhBusy=false;return}
       await F.updateDoc(F.doc(fs,'households',S.hid),{invited:F.arrayUnion(e)});toast('Invitation saved. They join from Settings after signing in.');
@@ -1879,25 +1882,35 @@ async function hhAct(kind,arg){
   }catch(e){toast(e&&e.code==='permission-denied'?'Not allowed. Check the household rules in Firebase.':'That did not work. Try again.')}
   hhBusy=false;await sync(true);render();
 }
+function householdPage(){
+  const S=db.sync;
+  if(!st.user)return`<div class="sec"><h3>Household</h3><p class="note">Sign in (Settings) to see your household.</p></div>`;
+  if(!HH)return`<div class="sec"><h3>Household</h3><p class="note">Loading your household…</p></div>`;
+  const pf=HH.profiles||{},names=HH.names||{};
+  const cards=HH.members.map(m=>m===st.user.uid?cardHTML(myCard(),1):cardHTML(Object.assign({n:names[m]},pf[m]||{}),0)).join('');
+  const inv=(HH.invited||[]).map(e=>`<span class="hhinv">${esc(e)} <button class="x" data-act="hhuninv" data-e="${esc(e)}" aria-label="Cancel invitation">✕</button></span>`).join(' ');
+  return`<div class="sec"><h3>${esc(HH.name||'Our library')}</h3><div class="mcards">${cards}</div>
+    <p class="note">Your card colours, nickname, rank, flair and favourite books are set in Profile. Titles, authors, covers, tags, formats, editions and release dates are shared. Status, dates, ratings, notes, copies, purchase dates, trophies and stats stay your own. A shared book only counts for you once you have added your own status, dates or rating.</p></div>
+    <div class="sec"><h3>Members</h3>
+    ${inv?`<p class="note">Waiting to join: ${inv}</p>`:''}
+    <div class="f" style="margin-top:10px"><input id="hhEmail" type="email" placeholder="Email address to invite"></div>
+    <div class="setrow"><button class="btn p" data-act="hhinvite">Invite</button><button class="btn" data-act="hhrename">Rename</button><button class="btn" data-act="hhleave">Leave household</button></div></div>`;
+}
+function renderHousehold(){
+  $('#tools').innerHTML='';
+  if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(stab())render()})}
+  $('#main').innerHTML=householdPage();
+}
 function householdBox(){
   const S=db.sync;if(!st.user||st.configured===false)return'';
   if(!st.user.emailVerified)return`<div class="sec"><h3>Household</h3><p class="note">Verify your email address to share a library with friends or family.</p></div>`;
-  let b,title='Household';
-  if(S.hid&&HH){
-    title='Household: '+esc(HH.name||'Our library');
-    const pf=HH.profiles||{},names=HH.names||{};
-    const cards=HH.members.map(m=>m===st.user.uid?cardHTML(myCard(),1):cardHTML(Object.assign({n:names[m]},pf[m]||{}),0)).join('');
-    const inv=(HH.invited||[]).map(e=>`<span class="hhinv">${esc(e)} <button class="x" data-act="hhuninv" data-e="${esc(e)}" aria-label="Cancel invitation">✕</button></span>`).join(' ');
-    b=`<div class="mcards">${cards}</div>
-    <p class="note">Titles, authors, covers, tags, formats, editions and release dates are shared. Status, dates, ratings, notes, copies, purchase dates, trophies and stats stay your own. A shared book only counts for you once you have added your own status, dates or rating.</p>
-    ${inv?`<p class="note" style="margin-top:10px">Waiting to join: ${inv}</p>`:''}
-    <div class="f" style="margin-top:10px"><input id="hhEmail" type="email" placeholder="Email address to invite"></div>
-    <div class="setrow"><button class="btn p" data-act="hhinvite">Invite</button><button class="btn" data-act="hhrename">Rename</button><button class="btn" data-act="hhleave">Leave household</button></div>`;
-  }else if(hhInv.length){
+  let b;
+  if(S.hid)b=`<p class="note">You are in ${HH?esc(HH.name||'a household'):'a household'}. Members, invitations and sharing are in the Household tab.</p><div class="setrow"><button class="btn p" data-tab="household">Open Household</button></div>`;
+  else if(hhInv.length){
     b=`<p class="note">You have been invited to share a library.</p>`+hhInv.map(h=>`<div class="setrow"><button class="btn p" data-act="hhjoin" data-id="${h.id}">Join ${esc(h.name||'a household')} (${(h.members||[]).length} ${(h.members||[]).length===1?'member':'members'})</button></div>`).join('');
-  }else b=`<p class="note">Share one library with your partner, family or friends. Anyone can add books and scan them in. Each person keeps their own reading dates, ratings, trophies and stats. You can only be in one household.</p>
+  }else b=`<p class="note">Share one library with your partner, family or friends. Anyone can add books and scan them in. Each person keeps their own reading dates, ratings, trophies and stats. You can only be in one household. A Household tab appears once you start one.</p>
     <div class="setrow"><button class="btn p" data-act="hhcreate">Start a household</button></div>`;
-  return`<div class="sec"><h3>${title}</h3>${b}</div>`;
+  return`<div class="sec"><h3>Household</h3>${b}</div>`;
 }
 document.addEventListener('change',e=>{
   const t=e.target;if(!t||(t.id!=='hhColour'&&t.id!=='hhShow'))return;
@@ -2007,7 +2020,7 @@ function doodleCard(){
 }
 
 /* ---------- Profile tab ---------- */
-const stab=()=>ui.tab==='settings'||ui.tab==='profile';
+const stab=()=>ui.tab==='settings'||ui.tab==='profile'||ui.tab==='household';
 const favIds=()=>{const f=db.flags.favs;return f&&Array.isArray(f.ids)?f.ids:[]};
 const favBooks=()=>favIds().map(id=>db.books.find(b=>b.id===id&&b.pr!==false)).filter(Boolean).slice(0,3);
 const favCover=b=>/^https?:\/\//.test(b.cover||'')&&b.cover.length<=200?b.cover:'';
@@ -2087,11 +2100,12 @@ document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.cla
 
 /* ---------- Wiring ---------- */
 function render(){
+  if(ui.tab==='household'&&!db.sync.hid)ui.tab='profile';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
-  $('#ttl').textContent={library:T().title,stats:T().stats,trophies:T().troph||'Trophies',profile:'Profile',settings:'Settings'}[ui.tab];
-  document.querySelectorAll('nav.tabs .e').forEach((e,i)=>{const nv=T().nav.slice();nv.splice(3,0,'👤');e.textContent=nv[i]});
+  $('#ttl').textContent={library:T().title,stats:T().stats,trophies:T().troph||'Trophies',profile:'Profile',household:'Household',settings:'Settings'}[ui.tab];
+  document.querySelectorAll('nav.tabs .e').forEach((e,i)=>{const nv=T().nav.slice();nv.splice(3,0,'👤','🏠');e.textContent=nv[i]});{const hb=document.querySelector('nav.tabs button[data-tab=household]');if(hb)hb.hidden=!db.sync.hid}
   $('#fab').hidden=ui.tab!=='library';document.querySelector('header.top').classList.toggle('lib',ui.tab==='library');bellDot();
-  ({library:renderLibrary,stats:renderStats,trophies:renderTrophies,profile:renderProfile,settings:renderSettings})[ui.tab]();
+  ({library:renderLibrary,stats:renderStats,trophies:renderTrophies,profile:renderProfile,household:renderHousehold,settings:renderSettings})[ui.tab]();
   if(ui.tab!=='trophies')updateDot();
 }
 document.addEventListener('click',async e=>{
