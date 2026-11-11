@@ -580,6 +580,15 @@ html[data-theme=scifi] .tchip{border-radius:4px;text-transform:uppercase;letter-
 .ntab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .nb{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;font-style:normal;line-height:18px;text-align:center}
 .ntab.on .nb{background:var(--accent-ink);color:var(--accent)}
+header.top.lib{position:relative;border-bottom:0}
+.fbar{position:sticky;top:0;z-index:5;background:var(--bg);margin:0 -16px;padding:calc(6px + env(safe-area-inset-top)) 16px 6px;border-bottom:1px solid var(--line)}
+.fbar .chips{padding-bottom:0}
+.pgr{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 90px}
+.pgn{font-size:13px;opacity:.7}
+.pgb{display:flex;align-items:center;gap:12px}
+.pgb button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 16px;font-size:14px}
+.pgb button:disabled{opacity:.4}
+.pgs{font-size:13px;display:flex;align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -680,11 +689,14 @@ function hello(){return T().hello}
 function renderLibrary(){
   const counts={all:db.books.length,rep:db.books.filter(b=>b.rep).length};Object.keys(STATUS).forEach(k=>counts[k]=db.books.filter(b=>b.status===k&&!b.rep).length);
   const chips=['all',...Object.keys(STATUS),'rep'].filter(k=>k!=='rep'||counts.rep||ui.status==='rep').map(k=>`<button data-status="${k}" class="${ui.status===k?'on':''}">${k==='all'?'All':k==='rep'?'🔁 On repeat':STATUS[k]} ${counts[k]}</button>`).join('');
-  $('#tools').innerHTML=`<p class="hello">${hello()}</p>${doodleCard()}${chipBtn()}${stripHTML()}<input id="q" type="search" placeholder="Search title, author, series, tag" value="${esc(ui.q)}">
-  <div class="chips">${chips}</div>
+  $('#tools').innerHTML=`<p class="hello">${hello()}</p>${doodleCard()}${chipBtn()}${stripHTML()}`;
+  const fb=`<div class="fbar"><input id="q" type="search" placeholder="Search title, author, series, tag" value="${esc(ui.q)}"><div class="chips">${chips}</div></div>
   <div class="row2"><select id="sort">${[['added','Recently added'],['title','Title'],['author','Author'],['rating','Rating'],['finished','Date finished']].map(([v,t])=>`<option value="${v}" ${ui.sort===v?'selected':''}>${t}</option>`).join('')}</select>
-  <select id="fmt"><option value="all">All formats</option>${FORMATS.map(f=>`<option ${ui.format===f?'selected':''}>${f}</option>`).join('')}</select></div>`;
-  const l=filtered();
+  <select id="fmt"><option value="all">All formats</option>${FORMATS.map(f=>`<option ${ui.format===f?'selected':''}>${f}</option>`).join('')}</select></div><div id="lst"></div><div id="pgr"></div>`;
+  $('#main').innerHTML=fb;
+  renderLibraryList();
+  return;
+  const l=[];
   $('#main').innerHTML=l.length?l.map(card).join(''):`<div class="empty">${db.books.length?'Nothing on the shelf matches that.':`<span class="big">${T().big}</span>Your shelf is waiting for its first book.<br>Tap + to add one, or bring your Goodreads shelf over in Settings.`}</div>`;
 }
 
@@ -1980,7 +1992,7 @@ function render(){
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   $('#ttl').textContent={library:T().title,stats:T().stats,trophies:T().troph||'Trophies',settings:'Settings'}[ui.tab];
   document.querySelectorAll('nav.tabs .e').forEach((e,i)=>e.textContent=T().nav[i]);
-  $('#fab').hidden=ui.tab!=='library';bellDot();
+  $('#fab').hidden=ui.tab!=='library';document.querySelector('header.top').classList.toggle('lib',ui.tab==='library');bellDot();
   ({library:renderLibrary,stats:renderStats,trophies:renderTrophies,settings:renderSettings})[ui.tab]();
   if(ui.tab!=='trophies')updateDot();
 }
@@ -1993,7 +2005,8 @@ document.addEventListener('click',async e=>{
   if(ds.rank!==undefined){pickTitle('rank',ds.rank);return}
   if(ds.flair!==undefined){pickTitle('flair',ds.flair);return}
   if(ds.tab){ui.tab=ds.tab;render();window.scrollTo(0,0);return}
-  if(ds.status){ui.status=ds.status;render();return}
+  if(ds.pg){ui.page=(ui.page||0)+(+ds.pg);renderLibraryList();const f=$('.fbar');if(f)window.scrollTo({top:Math.max(0,f.getBoundingClientRect().top+scrollY-4)});return}
+  if(ds.status){ui.status=ds.status;ui.page=0;render();return}
   if(ds.year){ui.year=+ds.year;render();return}
   if(ds.open){openForm(ds.open);return}
   if(ds.pick!==undefined){pick(+ds.pick);return}
@@ -2048,16 +2061,27 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('input',e=>{
   const t=e.target;
-  if(t.id==='q'){ui.q=t.value;const p=t.selectionStart;renderLibraryList()}
+  if(t.id==='q'){ui.q=t.value;ui.page=0;const p=t.selectionStart;renderLibraryList()}
   else if(t.id==='goal'){db.goals[new Date().getFullYear()]=+t.value||0;db.sync.goalsAt=Date.now();db.sync.dirty.goals=1;save()}
   else if(d&&t.dataset.f){const f=t.dataset.f;d[f]=f==='genres'?t.value.split(',').map(s=>s.trim()).filter(Boolean):(f==='cover'?t.value.trim():t.value)}
   else if(d&&t.dataset.read!==undefined){d.reads[+t.dataset.read][t.dataset.k]=t.value}
 });
-function renderLibraryList(){const l=filtered();$('#main').innerHTML=l.length?l.map(card).join(''):'<div class="empty">No books match.</div>'}
+const PP=[10,20,50,100];
+function perPage(){let n=0;try{n=+localStorage.getItem('shelf.pp')}catch(_){}return PP.includes(n)?n:20}
+function renderLibraryList(){
+  const l=filtered(),n=perPage(),pages=Math.max(1,Math.ceil(l.length/n));
+  if(!ui.page||ui.page<0)ui.page=0;if(ui.page>=pages)ui.page=pages-1;
+  const a=ui.page*n,sl=l.slice(a,a+n);
+  $('#lst').innerHTML=l.length?sl.map(card).join(''):`<div class="empty">${db.books.length?'Nothing on the shelf matches that.':`<span class="big">${T().big}</span>Your shelf is waiting for its first book.<br>Tap + to add one, or bring your Goodreads shelf over in Settings.`}</div>`;
+  $('#pgr').innerHTML=l.length>10?`<div class="pgr"><span class="pgn">${a+1} to ${Math.min(a+n,l.length)} of ${l.length}</span>
+    <div class="pgb"><button data-pg="-1" ${ui.page<=0?'disabled':''}>Previous</button><span>Page ${ui.page+1} of ${pages}</span><button data-pg="1" ${ui.page>=pages-1?'disabled':''}>Next</button></div>
+    <label class="pgs">Books per page <select id="pp">${PP.map(v=>`<option ${v===n?'selected':''}>${v}</option>`).join('')}</select></label></div>`:'';
+}
 document.addEventListener('change',async e=>{
   const t=e.target;
-  if(t.id==='sort'){ui.sort=t.value;render()}
-  else if(t.id==='fmt'){ui.format=t.value;render()}
+  if(t.id==='pp'){try{localStorage.setItem('shelf.pp',t.value)}catch(_){}ui.page=0;renderLibraryList()}
+  else if(t.id==='sort'){ui.sort=t.value;ui.page=0;render()}
+  else if(t.id==='fmt'){ui.format=t.value;ui.page=0;render()}
   else if(d&&t.dataset.f==='format'){d.format=t.value}
   else if(t.id==='covfile'&&t.files[0]){const u=await shrinkImage(t.files[0]);if(u){d.cover=u;drawForm()}else toast('Could not read that image.')}
   else if(t.id==='impjson'&&t.files[0]){importJSON(await t.files[0].text());t.value=''}
