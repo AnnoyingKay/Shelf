@@ -1,4 +1,4 @@
-const CACHE = 'shelf-v15';
+const CACHE = 'shelf-v17';
 const FILES = ['./', './index.html', './manifest.webmanifest', './firebase-config.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

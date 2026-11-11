@@ -510,6 +510,8 @@ html[data-theme=scifi] .tchip{border-radius:4px;text-transform:uppercase;letter-
 .badge.rep{margin-left:6px;background:var(--soft);color:var(--ink);border:1px solid var(--line)}
 
 .bell[hidden]{display:none}
+.hhinv{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid var(--line,#e6dcc6);border-radius:999px;font-size:12px;margin:2px 2px 0 0}
+.hhinv button{border:0;background:none;color:inherit;font-size:12px;cursor:pointer;padding:0}
 </style>
 </head>
 <body>
@@ -571,19 +573,19 @@ const days=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/8
 
 function load(){try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);db.books=p.books||[];db.goals=p.goals||{};db.flags=Object.assign({themes:{},seen:{}},p.flags||{});db.flags.themes=db.flags.themes||{};db.flags.seen=db.flags.seen||{};db.sync=Object.assign(db.sync,p.sync||{})}}catch(e){}
   const S=db.sync;S.dirty=S.dirty||{};S.tomb=S.tomb||{};db.books.forEach(b=>{if(!b.updated){b.updated=Date.now();S.dirty[b.id]=1}})}
-function touch(b){b.updated=Date.now();db.sync.dirty[b.id]=1;delete db.sync.tomb[b.id]}
+function touch(b){b.updated=Date.now();hhTouch(b);db.sync.dirty[b.id]=1;delete db.sync.tomb[b.id]}
 function save(){dbVer++;try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Could not save. Storage may be full or blocked.')}scheduleSync()}
 let tt;function toast(m){let t=$('.toast');if(t)t.remove();t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);clearTimeout(tt);tt=setTimeout(()=>t.remove(),2800)}
 
 const lastEnd=b=>b.reads.reduce((m,r)=>r.end&&r.end>m?r.end:m,'');
 const firstStart=b=>b.reads.reduce((m,r)=>r.start&&(!m||r.start<m)?r.start:m,'');
 const stars=r=>`<span class="stars" style="--r:${r||0}" aria-label="${r||0} out of 5">★★★★★</span>`;
-function newBook(p){return Object.assign({id:uid(),title:'',author:'',format:'Paperback',status:'want',series:'',seriesNo:'',pages:'',progress:'',isbn:'',cover:'',genres:[],rating:0,review:'',notes:'',reads:[],added:today()},p||{})}
+function newBook(p){return Object.assign({id:uid(),title:'',author:'',format:'Paperback',status:'want',series:'',seriesNo:'',pages:'',progress:'',isbn:'',cover:'',genres:[],rating:0,review:'',notes:'',reads:[],added:today(),edition:'',rel:'',bought:'',copies:''},p||{})}
 
 /* ---------- Library ---------- */
 function filtered(){
   const q=ui.q.trim().toLowerCase();
-  let l=db.books.filter(b=>(ui.status==='all'||(ui.status==='rep'?b.rep:(b.status===ui.status&&!b.rep)))&&(ui.format==='all'||b.format===ui.format)&&(!q||[b.title,b.author,b.series,b.genres.join(' ')].join(' ').toLowerCase().includes(q)));
+  let l=db.books.filter(b=>(ui.status==='all'||(ui.status==='rep'?b.rep:ui.status==='undated'?(b.status==='finished'&&!b.rep&&b.pr!==false&&!lastEnd(b)):(b.status===ui.status&&!b.rep)))&&(ui.format==='all'||b.format===ui.format)&&(!q||[b.title,b.author,b.series,b.genres.join(' ')].join(' ').toLowerCase().includes(q)));
   const cmp={added:(a,b)=>b.added.localeCompare(a.added),title:(a,b)=>a.title.localeCompare(b.title),author:(a,b)=>a.author.localeCompare(b.author),rating:(a,b)=>(b.rating||0)-(a.rating||0),finished:(a,b)=>lastEnd(b).localeCompare(lastEnd(a))}[ui.sort];
   return l.sort(cmp);
 }
@@ -596,7 +598,7 @@ function card(b){
   return `<div class="card" data-open="${b.id}">
   <div class="cover" style="background:${tint(b.title)}">${b.cover?`<img loading="lazy" src="${esc(b.cover)}" alt="" onerror="this.remove()">`:esc((b.title||'?')[0].toUpperCase())}</div>
   <div class="meta"><div class="t">${esc(b.title)}</div><div class="a">${esc(b.author)}</div>
-  <div style="margin-top:6px"><span class="badge ${b.status}">${T().semo[b.status]} ${STATUS[b.status]}</span>${b.rep?'<span class="badge rep">🔁 On repeat</span>':''}<span class="note">${esc(b.format)}</span></div>
+  <div style="margin-top:6px"><span class="badge ${b.status}">${T().semo[b.status]} ${STATUS[b.status]}</span>${b.rep?'<span class="badge rep">🔁 On repeat</span>':''}${b.hh&&b.pr===false?'<span class="badge rep">👥 Shared</span>':''}<span class="note">${esc(b.format)}${b.edition?" · "+esc(b.edition):""}${+b.copies>1?" · "+esc(b.copies)+" copies":""}</span></div>
   ${b.rating?`<div style="margin-top:4px">${stars(b.rating)}</div>`:''}
   ${b.status==='reading'&&pct?`<div class="bar"><i style="width:${pct}%"></i></div><div class="sub">${b.progress} of ${b.pages} pages (${pct}%)</div>`:''}
   ${sub.length?`<div class="sub">${sub.join(' · ')}</div>`:''}</div></div>`;
@@ -616,7 +618,7 @@ function renderLibrary(){
 /* ---------- Stats ---------- */
 function renderStats(){
   $('#tools').innerHTML='';
-  const entries=[];db.books.forEach(b=>{if(!b.rep)b.reads.forEach(r=>{if(r.end)entries.push({b,r})})});
+  const entries=[];db.books.forEach(b=>{if(!b.rep&&b.pr!==false)b.reads.forEach(r=>{if(r.end)entries.push({b,r})})});
   const years=[...new Set(entries.map(e=>e.r.end.slice(0,4)))].sort().reverse();
   const cy=String(new Date().getFullYear());if(!years.includes(cy))years.unshift(cy);
   if(!years.includes(String(ui.year)))ui.year=cy;
@@ -630,7 +632,7 @@ function renderStats(){
   const months=Array(12).fill(0);ye.forEach(e=>months[+e.r.end.slice(5,7)-1]++);const mx=Math.max(1,...months);
   const tally=(f)=>{const m={};ye.forEach(e=>f(e.b).forEach(k=>{if(k)m[k]=(m[k]||0)+1}));return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6)};
   const hb=(arr)=>{const t=Math.max(1,...arr.map(a=>a[1]));return arr.map(([k,v])=>`<div class="hbar"><span>${esc(k)}</span><div class="bar"><i style="width:${v/t*100}%"></i></div><span style="width:28px;text-align:right">${v}</span></div>`).join('')||'<div class="note">Nothing yet.</div>'};
-  const undated=db.books.filter(b=>b.status==='finished'&&!b.rep&&!lastEnd(b)).length;
+  const undated=db.books.filter(b=>b.status==='finished'&&!b.rep&&b.pr!==false&&!lastEnd(b)).length;
   $('#main').innerHTML=`<div class="chips">${years.map(v=>`<button data-year="${v}" class="${v===y?'on':''}">${v}</button>`).join('')}</div>
   <div class="sec"><div class="stat"><div><b>${ye.length}</b><span>books finished${goal?' of '+goal:''}</span></div><div><b>${pages.toLocaleString('en-IE')}</b><span>pages</span></div><div><b>${avg}</b><span>average rating</span></div><div><b>${avgd}</b><span>average days to finish</span></div></div>
   ${goal?`<div class="bar" style="height:10px;margin-top:12px"><i style="width:${Math.min(100,ye.length/goal*100)}%"></i></div><div class="note" style="margin-top:4px">${ye.length>=goal?'Goal reached.':(goal-ye.length)+' to go for your '+y+' goal.'}</div>`:`<div class="note" style="margin-top:10px">Set a yearly goal in Settings.</div>`}</div>
@@ -638,7 +640,7 @@ function renderStats(){
   <div class="sec"><h3>By format</h3>${hb(tally(b=>[b.format]))}</div>
   <div class="sec"><h3>Top tags</h3>${hb(tally(b=>b.genres))}</div>
   ${longest&&longest.b.pages?`<div class="sec"><h3>Longest read</h3>${esc(longest.b.title)} <span class="note">${longest.b.pages} pages</span></div>`:''}
-  <div class="sec"><h3>All years</h3>${hb(years.map(v=>[v,entries.filter(e=>e.r.end.slice(0,4)===v).length]))}${undated?`<div class="note">${undated} finished book${undated>1?'s have':' has'} no finish date, so they are not counted by year.</div>`:''}</div>`;
+  <div class="sec"><h3>All years</h3>${hb(years.map(v=>[v,entries.filter(e=>e.r.end.slice(0,4)===v).length]))}${undated?`<div class="note">${undated} finished book${undated>1?'s have':' has'} no finish date, so they are not counted by year. <button class="btn" data-act="undated">Show them</button></div>`:''}</div>`;
 }
 
 /* ---------- Settings ---------- */
@@ -688,6 +690,11 @@ function drawForm(keepScroll){
   <div class="g2"><div class="f"><label>Series</label><input data-f="series" value="${esc(d.series)}"></div><div class="f"><label>Number in series</label><input data-f="seriesNo" inputmode="decimal" value="${esc(d.seriesNo)}"></div></div>
   <div class="f"><label>Tags or genres (comma separated)</label><input data-f="genres" value="${esc(d.genres.join(', '))}"></div>
   <div class="f"><label>ISBN</label><input data-f="isbn" inputmode="numeric" value="${esc(d.isbn)}"></div>
+  <details class="sec"${(d.edition||d.rel||d.bought||d.copies)?' open':''}><summary><b>Edition details</b> (optional)</summary>
+  <div class="f"><label>Edition</label><input data-f="edition" value="${esc(d.edition)}" placeholder="For example: First edition, or Penguin Classics 2003" autocomplete="off"></div>
+  <div class="g2"><div class="f"><label>Physical release date</label><input data-f="rel" value="${esc(d.rel)}" placeholder="2003, 2003-05 or 2003-05-14" autocomplete="off"></div>
+  <div class="f"><label>Copies you own</label><input type="number" inputmode="numeric" min="0" data-f="copies" value="${esc(d.copies)}"></div></div>
+  <div class="f"><label>Date of purchase (physical copies)</label><input type="date" data-f="bought" value="${esc(d.bought)}"></div></details>
   <div class="f"><label>Cover image URL</label><input data-f="cover" value="${d.cover.startsWith('data:')?'':esc(d.cover)}" placeholder="${d.cover.startsWith('data:')?'Custom image set':'https://…'}"><div class="setrow"><label class="btn">Choose image from phone<input type="file" id="covfile" accept="image/*" hidden></label>${d.cover?'<button class="btn" data-act="nocover">Remove cover</button>':''}</div></div>
   <div class="f"><label>Review</label><textarea data-f="review">${esc(d.review)}</textarea></div>
   <div class="f"><label>Notes and quotes</label><textarea data-f="notes">${esc(d.notes)}</textarea></div>
@@ -824,7 +831,7 @@ function syncBox(){
   else body=`<p class="note">Signed in as ${esc(st.user.email)}${st.user.emailVerified===false?' (not verified)':''}.<br><span id="syncStatus">${esc(syncMsg||(S.at?'Last synced '+new Date(S.at).toLocaleString('en-IE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Not synced yet.'))}</span></p>
     ${st.user.emailVerified===false?'<p class="note">Please verify your email so titles given to you can reach you. Check your inbox, then tap I have verified.</p><div class="setrow"><button class="btn" data-act="resendv">Resend email</button><button class="btn" data-act="checkv">I have verified</button></div>':''}
     <div class="setrow"><button class="btn p" data-act="syncnow">Sync now</button><button class="btn" data-act="signout">Sign out</button></div>`;
-  return `<div class="sec"><h3>Sync across devices</h3>${body}</div>`;
+  return `<div class="sec"><h3>Sync across devices</h3>${body}${hhMsg?'<p class="note">'+esc(hhMsg)+'</p>':''}</div>`+householdBox();
 }
 function authErr(e){
   const c=(e&&e.code)||'';
@@ -878,6 +885,7 @@ async function sync(manual){
     if(mj!==cj(rem||{}))await F.setDoc(pref,{json:mj,updated:Date.now(),synced:F.serverTimestamp()});
     try{if(st.user.email){let ok=true;if(st.user.getIdTokenResult){let tr=await st.user.getIdTokenResult();if(!tr.claims.email_verified){try{await st.user.reload()}catch(e){}if(st.user.emailVerified)tr=await st.user.getIdTokenResult(true)}ok=!!tr.claims.email_verified}
       if(ok){const gd=await F.getDoc(F.doc(fs,'grants',st.user.email.toLowerCase())),g=gd.exists()&&gd.data().titles,nw=Array.isArray(g)?g.slice().sort():[];if(cj(nw)!==cj(S.granted||[])){S.granted=nw;changed=true}}}}catch(e){}
+    try{if(await hhSync(F,fs))changed=true;hhMsg=''}catch(e){hhMsg=(e&&e.code==='permission-denied')?'Household sync was refused. Check the Firestore rules.':'Household sync failed.';console.warn(e)}
     const ids=Object.keys(S.dirty).filter(k=>k!=='goals');
     for(let i=0;i<ids.length;i+=100){
       const chunk=ids.slice(i,i+100),batch=F.writeBatch(fs);
@@ -941,7 +949,7 @@ const holV=h=>c=>{let any=0,both=0;const ys=new Set();for(const r of c.R){const 
 /* ----- context: everything the trophies need, as of a date (or now) ----- */
 function mkCtx(asof){
   const V=[];
-  for(const b of db.books){
+  for(const b of myBooks()){
     if(b.rep)continue;
     if(asof){const bd=[b.added].concat(b.reads.flatMap(r=>[r.start,r.end])).filter(Boolean).sort()[0];if(bd&&bd>asof)continue}
     let rs=b.reads;
@@ -1132,7 +1140,7 @@ function levelsNow(){
   return{lvl,val,c};
 }
 function candDates(){
-  const s=new Set();db.books.forEach(b=>{if(b.rep)return;s.add(b.added);b.reads.forEach(r=>{s.add(r.start);s.add(r.end)})});
+  const s=new Set();myBooks().forEach(b=>{if(b.rep)return;s.add(b.added);b.reads.forEach(r=>{s.add(r.start);s.add(r.end)})});
   const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl')s.add(f[k])});
   let a=[...s].filter(x=>/^\d{4}-\d\d-\d\d$/.test(x)).sort();
   if(a.length>240){const k=Math.ceil(a.length/240),b=[];for(let i=k-1;i<a.length;i+=k)b.push(a[i]);if(b[b.length-1]!==a[a.length-1])b.push(a[a.length-1]);a=b}
@@ -1365,19 +1373,19 @@ const KW={
 };
 const isFin=b=>b.status==='finished'||(b.reads||[]).some(r=>r.end);
 const kwHit=(b,id)=>{const t=(b.genres||[]).join(' ').toLowerCase(),f=(b.format||'').toLowerCase();return KW[id].some(k=>t.includes(k))||(id==='comic'&&/comic|manga|graphic/.test(f))};
-const gCount=id=>db.books.filter(b=>!b.rep&&isFin(b)&&kwHit(b,id)).length;
+const gCount=id=>myBooks().filter(b=>!b.rep&&isFin(b)&&kwHit(b,id)).length;
 const nTro=()=>{try{return earnedN(trophyState())}catch(e){return 0}};
 function inSeason(id){const d=new Date(),m=d.getMonth()+1,day=d.getDate();if(id==='hallow')return m===10||(m===11&&day<=2);if(id==='yule')return m===12||(m===1&&day<=6);return false}
 const verified=()=>!!(st.user&&st.user.emailVerified);
 const RULES={
  nook:{need:'',ok:()=>true},
- cat:{need:'Add 5 books',ok:()=>db.books.length>=5},
- meadow:{need:'Finish your first book',ok:()=>db.books.some(b=>!b.rep&&isFin(b))},
+ cat:{need:'Add 5 books',ok:()=>myBooks().length>=5},
+ meadow:{need:'Finish your first book',ok:()=>myBooks().some(b=>!b.rep&&isFin(b))},
  comic:{need:'Finish 2 comics, manga or graphic novels',ok:()=>gCount('comic')>=2},
  scifi:{need:'Finish 2 books tagged sci fi',ok:()=>gCount('scifi')>=2},
  fantasy:{need:'Finish 2 books tagged fantasy',ok:()=>gCount('fantasy')>=2},
  gothic:{need:'Finish 2 books tagged horror or gothic',ok:()=>gCount('gothic')>=2},
- toys:{need:'Add a children’s book, or mark one On repeat',ok:()=>db.books.some(b=>b.rep||kwHit(b,'toys'))},
+ toys:{need:'Add a children’s book, or mark one On repeat',ok:()=>myBooks().some(b=>b.rep||kwHit(b,'toys'))},
  frontier:{need:'Finish 2 westerns, or reach 18 trophies',ok:()=>gCount('frontier')>=2||nTro()>=18},
  regency:{need:'Finish 2 romances, or reach 33 trophies',ok:()=>gCount('regency')>=2||nTro()>=33},
  crystal:{need:'Finish 2 books based on video games (tag: video game, or the game’s name)',ok:()=>gCount('crystal')>=2},
@@ -1408,7 +1416,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -1623,6 +1631,123 @@ async function changePw(){
   try{const A=FB.A;await A.reauthenticateWithCredential(st.user,A.EmailAuthProvider.credential(st.user.email,o));await A.updatePassword(st.user,n);toast('Password changed.');$('#pwOld').value='';$('#pwNew').value=''}
   catch(e){const c=(e&&e.code)||'';toast(c==='auth/wrong-password'||c==='auth/invalid-credential'?'The current password is not right.':c==='auth/requires-recent-login'?'Sign out and in again, then try once more.':authErr(e))}
 }
+/* ---------- Household (shared library) ---------- */
+const myBooks=()=>db.books.filter(b=>b.pr!==false);
+const HSH=['title','author','isbn','pages','cover','series','seriesNo','format','genres','edition','rel'];
+const hsig=b=>JSON.stringify(HSH.map(k=>b[k]));
+const psig=b=>JSON.stringify([b.status,b.rating,b.review,b.notes,b.reads,b.progress,b.rep]);
+let HH=null,hhBusy=false,hhInv=[],hhMsg='';
+function hhTouch(b){
+  const S=db.sync;if(!S.hid)return;S.hdirty=S.hdirty||{};
+  if(b.hh&&b.pr===false&&psig(b)!==b.psig)b.pr=true;
+  if(!b.hh&&!b.np&&b.pr!==false){b.hh=1;b.psig=psig(b)}
+  if(b.hh){const g=hsig(b);if(g!==b.hsig){b.hsig=g;b.hat=Date.now();S.hdirty[b.id]=1}}
+}
+function hhName(){const n=nickOf();return n||((st.user&&st.user.email)||'').split('@')[0]||'Member'}
+async function hhFind(F,fs){
+  const S=db.sync,u=st.user;
+  const q=await F.getDocs(F.query(F.collection(fs,'households'),F.where('members','array-contains',u.uid)));
+  let found=null;q.forEach(d=>{if(!found)found={id:d.id,...d.data()}});
+  HH=found;
+  if(found){if(S.hid!==found.id){S.hid=found.id;S.hlast=0;S.hdirty={};S.htomb={}}}
+  else if(S.hid){S.hid='';S.hlast=0;hhDetach()}
+  hhInv=[];
+  if(!found&&u.emailVerified&&u.email){
+    const r=await F.getDocs(F.query(F.collection(fs,'households'),F.where('invited','array-contains',u.email.toLowerCase())));
+    r.forEach(d=>hhInv.push({id:d.id,...d.data()}));
+  }
+}
+function hhDetach(){db.books=db.books.filter(b=>b.pr!==false);db.books.forEach(b=>{delete b.hh;delete b.psig;delete b.hsig;delete b.hat;delete b.np})}
+async function hhSync(F,fs){
+  const S=db.sync;S.hdirty=S.hdirty||{};S.htomb=S.htomb||{};
+  await hhFind(F,fs);
+  if(!S.hid)return false;
+  const col=F.collection(fs,'households',S.hid,'books');let changed=false,maxS=S.hlast||0;
+  const snap=await F.getDocs(F.query(col,F.where('synced','>',F.Timestamp.fromMillis(S.hlast||0))));
+  snap.forEach(dc=>{
+    const r=dc.data(),id=dc.id,sm=r.synced&&r.synced.toMillis?r.synced.toMillis():0;if(sm>maxS)maxS=sm;
+    const i=db.books.findIndex(b=>b.id===id),loc=i>=0?db.books[i]:null,tomb=S.htomb[id]||0;
+    if(r.deleted){
+      if(loc){db.books.splice(i,1);delete S.dirty[id];delete S.hdirty[id];S.tomb[id]=Date.now();S.dirty[id]=1;changed=true}
+      S.htomb[id]=r.updated||1;return;
+    }
+    if(tomb&&tomb>=r.updated)return;
+    let sh;try{sh=JSON.parse(r.json)}catch(e){return}
+    if(loc){
+      if((loc.hat||0)>=r.updated){if((loc.hat||0)>r.updated)S.hdirty[id]=1;return}
+      HSH.forEach(k=>{if(sh[k]!==undefined)loc[k]=sh[k]});loc.hh=1;loc.hsig=hsig(loc);loc.hat=r.updated;S.dirty[id]=1;changed=true;
+    }else{
+      if(S.tomb[id]&&!S.hdirty[id]){/* deleted here earlier, keep gone only if household also deleted */}
+      const b=newBook(Object.assign({},sh,{id,hh:1,pr:false,added:today()}));
+      b.psig=psig(b);b.hsig=hsig(b);b.hat=r.updated;b.updated=Date.now();delete S.tomb[id];S.dirty[id]=1;db.books.push(b);changed=true;
+    }
+  });
+  const ids=Object.keys(S.hdirty);
+  for(let i=0;i<ids.length;i+=100){
+    const chunk=ids.slice(i,i+100),batch=F.writeBatch(fs);
+    chunk.forEach(id=>{
+      const b=db.books.find(x=>x.id===id);
+      if(b&&b.hh){const sh={};HSH.forEach(k=>sh[k]=b[k]);batch.set(F.doc(col,id),{json:JSON.stringify(sh),updated:b.hat||Date.now(),deleted:false,by:st.user.uid,synced:F.serverTimestamp()})}
+      else if(S.htomb[id])batch.set(F.doc(col,id),{json:'',updated:S.htomb[id],deleted:true,by:st.user.uid,synced:F.serverTimestamp()});
+    });
+    await batch.commit();chunk.forEach(id=>delete S.hdirty[id]);
+  }
+  S.hlast=maxS;return changed;
+}
+function hhDelete(b){const S=db.sync;if(S.hid&&b.hh){S.htomb[b.id]=Date.now();S.hdirty[b.id]=1}}
+function hhShareAll(){const S=db.sync;db.books.forEach(b=>{if(b.pr===false)return;b.hh=1;b.pr=true;b.hsig=hsig(b);b.hat=Date.now();b.psig=psig(b);S.hdirty[b.id]=1;S.dirty[b.id]=1})}
+async function hhAct(kind,arg){
+  const f=await fbInit();if(!f||!st.user)return;
+  if(!st.user.emailVerified){toast('Verify your email first. Then households can be used.');return}
+  const F=f.F,fs=f.fs,S=db.sync,u=st.user;S.hdirty=S.hdirty||{};S.htomb=S.htomb||{};
+  if(hhBusy)return;hhBusy=true;
+  try{
+    if(kind==='create'){
+      const ref=F.doc(F.collection(fs,'households'));
+      await F.setDoc(ref,{members:[u.uid],invited:[],names:{[u.uid]:hhName()},created:Date.now()});
+      S.hid=ref.id;S.hlast=0;
+      if(myBooks().length&&confirm('Add the '+myBooks().length+' books on this shelf to the shared library? Choose Cancel to keep them private.'))hhShareAll();else db.books.forEach(b=>b.np=1);
+      toast('Household started.');
+    }else if(kind==='invite'){
+      const e=(arg||'').trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)){toast('That email address does not look right.');hhBusy=false;return}
+      await F.updateDoc(F.doc(fs,'households',S.hid),{invited:F.arrayUnion(e)});toast('Invitation saved. They join from Settings after signing in.');
+    }else if(kind==='uninvite'){
+      await F.updateDoc(F.doc(fs,'households',S.hid),{invited:F.arrayRemove(arg)});
+    }else if(kind==='join'){
+      const h=hhInv.find(x=>x.id===arg);if(!h){hhBusy=false;return}
+      const n=myBooks().length,share=n&&confirm('Add the '+n+' books on this shelf to the shared library? Choose Cancel to keep them private.');
+      await F.updateDoc(F.doc(fs,'households',arg),{members:F.arrayUnion(u.uid),invited:F.arrayRemove(u.email.toLowerCase()),['names.'+u.uid]:hhName()});
+      S.hid=arg;S.hlast=0;if(share)hhShareAll();else db.books.forEach(b=>b.np=1);toast('Joined. Shared books are arriving. They count for you only once you add your own status, dates or rating.');
+    }else if(kind==='leave'){
+      const mine=myBooks().filter(b=>b.hh).length;
+      if(!confirm('Leave this household? Books you have used stay on your shelf as private books. Shared books you have not touched are removed from this shelf.')){hhBusy=false;return}
+      const ref=F.doc(fs,'households',S.hid);
+      if(HH&&HH.members.length<=1)await F.deleteDoc(ref);
+      else await F.updateDoc(ref,{members:F.arrayRemove(u.uid),['names.'+u.uid]:F.deleteField()});
+      S.hid='';S.hlast=0;S.hdirty={};S.htomb={};HH=null;hhDetach();
+      db.books.forEach(b=>S.dirty[b.id]=1);
+    }
+    save();
+  }catch(e){toast(e&&e.code==='permission-denied'?'Not allowed. Check the household rules in Firebase.':'That did not work. Try again.')}
+  hhBusy=false;await sync(true);render();
+}
+function householdBox(){
+  const S=db.sync;if(!st.user||st.configured===false)return'';
+  if(!st.user.emailVerified)return`<div class="sec"><h3>Household</h3><p class="note">Verify your email address to share a library with friends or family.</p></div>`;
+  let b;
+  if(S.hid&&HH){
+    const names=HH.names||{},mem=HH.members.map(m=>esc(names[m]||'Member')+(m===st.user.uid?' (you)':'')).join(', ');
+    const inv=(HH.invited||[]).map(e=>`<span class="hhinv">${esc(e)} <button class="x" data-act="hhuninv" data-e="${esc(e)}" aria-label="Cancel invitation">✕</button></span>`).join(' ');
+    b=`<p class="note">Sharing one library with: ${mem}.<br>Titles, authors, covers, tags and formats are shared. Status, dates, ratings, notes, trophies and stats stay your own. A shared book only counts for you once you have added your own status, dates or rating.</p>
+    ${inv?`<p class="note">Waiting to join: ${inv}</p>`:''}
+    <div class="f"><input id="hhEmail" type="email" placeholder="Email address to invite"></div>
+    <div class="setrow"><button class="btn p" data-act="hhinvite">Invite</button><button class="btn" data-act="hhleave">Leave household</button></div>`;
+  }else if(hhInv.length){
+    b=`<p class="note">You have been invited to share a library.</p>`+hhInv.map(h=>`<div class="setrow"><button class="btn p" data-act="hhjoin" data-id="${h.id}">Join ${esc(Object.values(h.names||{})[0]||'household')}</button></div>`).join('');
+  }else b=`<p class="note">Share one library with your partner, family or friends. Anyone can add books and scan them in. Each person keeps their own reading dates, ratings, trophies and stats. You can only be in one household.</p>
+    <div class="setrow"><button class="btn p" data-act="hhcreate">Start a household</button></div>`;
+  return`<div class="sec"><h3>Household</h3>${b}</div>`;
+}
 
 /* ---------- Wiring ---------- */
 function render(){
@@ -1660,7 +1785,7 @@ document.addEventListener('click',async e=>{
     case'scan':startScan();break;
     case'stopscan':stopScan();break;
     case'nocover':d.cover='';drawForm();break;
-    case'delbook':if(confirm('Delete this book? This cannot be undone.')){db.books=db.books.filter(b=>b.id!==d.id);db.sync.tomb[d.id]=Date.now();db.sync.dirty[d.id]=1;save();closeForm();render();toast('Deleted')}break;
+    case'delbook':{const hb=db.books.find(b=>b.id===d.id),hs=hb&&hb.hh&&db.sync.hid;if(confirm(hs?'Delete this book for everyone in your household? This cannot be undone.':'Delete this book? This cannot be undone.')){if(hb)hhDelete(hb);db.books=db.books.filter(b=>b.id!==d.id);db.sync.tomb[d.id]=Date.now();db.sync.dirty[d.id]=1;save();closeForm();render();toast('Deleted')}break}
     case'titles':openTitles();break;
     case'gift':giveFlair();break;
     case'ungift':ungift(ds.e,ds.k);break;
@@ -1671,6 +1796,12 @@ document.addEventListener('click',async e=>{
     case'exportcsv':setFlag('exp');exportCSV();break;
     case'persist':try{const ok=await navigator.storage.persist();toast(ok?'Browser will keep your data.':'Browser declined. Keep backups.')}catch(x){toast('Not supported here.')}break;
     case'chpw':changePw();break;
+    case'undated':ui.status='undated';ui.tab='library';render();toast('Showing finished books with no finish date. Tap All to clear.');break;
+    case'hhcreate':hhAct('create');break;
+    case'hhinvite':hhAct('invite',($('#hhEmail')||{}).value);break;
+    case'hhuninv':hhAct('uninvite',d.e);break;
+    case'hhjoin':hhAct('join',d.id);break;
+    case'hhleave':hhAct('leave');break;
     case'bell':openBell();break;
     case'nclear':NOTES=[];notesSave();openBell();break;
     case'reptoggle':d.rep=!d.rep;drawForm();break;
