@@ -425,6 +425,56 @@ html[data-theme=crystal] nav.tabs button.on{background:#1a3a96}
 html[data-theme=crystal] .chips button.on,html[data-theme=crystal] .btn.p,html[data-theme=crystal] .seg button.on{box-shadow:0 0 10px rgba(255,211,107,.55)}
 html[data-theme=crystal] body{background-image:radial-gradient(ellipse at 50% 0%,rgba(111,200,255,.18),transparent 60%)}
 html[data-theme=crystal] .bell{border-width:2px}
+
+/* ===== seasonal themes ===== */
+html[data-theme=sobremesa]{--bg:#f6ead2;--card:#fff8e8;--ink:#3b2418;--mute:#8a6a52;--line:#e2cba0;--accent:#b5532a;--accent-ink:#fff8e8;--warm:#e0a33a;--warm-ink:#2a1a05;--star:#e0a33a;--danger:#b3302a;--soft:#f1dcae;--sage:#d6dcb4;--blush:#f2c9a8;--sky:#cfdde0;--font:Georgia,"Times New Roman",serif;--serif:Georgia,"Times New Roman",serif;--cover-ink:rgba(255,248,232,.85)}
+html[data-theme=sobremesa] header.top h1{font-style:italic;font-weight:700;color:var(--accent)}
+html[data-theme=sobremesa] .hello{color:var(--accent);font-style:italic}
+html[data-theme=sobremesa] .card,html[data-theme=sobremesa] .sec{border-radius:16px;border:2px solid #e2cba0;}
+html[data-theme=sobremesa] input,html[data-theme=sobremesa] select,html[data-theme=sobremesa] textarea,html[data-theme=sobremesa] .btn,html[data-theme=sobremesa] .chips button,html[data-theme=sobremesa] .seg button{border-radius:10px}
+html[data-theme=sobremesa] .cover{border-radius:3px 6px 6px 3px;box-shadow:inset 4px 0 0 rgba(0,0,0,.25),0 3px 8px rgba(0,0,0,.35)}
+html[data-theme=sobremesa] .bar i{background:repeating-linear-gradient(135deg,var(--accent) 0 8px,var(--warm) 8px 16px)}
+html[data-theme=sobremesa]{--bgimg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23b5532a' stroke-width='1' opacity='.16'%3E%3Cpath d='M40 6 L74 40 L40 74 L6 40Z'/%3E%3Ccircle cx='40' cy='40' r='13'/%3E%3Cpath d='M0 0 L14 14 M80 0 L66 14 M0 80 L14 66 M80 80 L66 66'/%3E%3C/g%3E%3Cg fill='%23e0a33a' opacity='.22'%3E%3Ccircle cx='40' cy='40' r='3'/%3E%3Ccircle cx='6' cy='40' r='2'/%3E%3Ccircle cx='74' cy='40' r='2'/%3E%3C/g%3E%3C/svg%3E"),linear-gradient(180deg,#f8eed8,#f0e0bc)}
+html[data-theme=sobremesa] header.top::after{right:52px;top:calc(0px + env(safe-area-inset-top));width:120px;height:72px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='90' viewBox='0 0 150 90'%3E%3Crect x='0' y='70' width='150' height='6' fill='%238a4a22' opacity='.7'/%3E%3Crect x='6' y='76' width='4' height='14' fill='%238a4a22' opacity='.7'/%3E%3Crect x='140' y='76' width='4' height='14' fill='%238a4a22' opacity='.7'/%3E%3Cg%3E%3Crect x='30' y='34' width='4' height='36' fill='%23f6ead2' stroke='%238a6a3a' stroke-width='.8'/%3E%3Cpath d='M32 22 C28 28 30 32 32 32 C34 32 36 28 32 22Z' fill='%23f2b63a'/%3E%3Cellipse cx='32' cy='27' rx='7' ry='9' fill='%23f2b63a' opacity='.2'/%3E%3C/g%3E%3Cg%3E%3Cpath d='M70 70 C60 66 62 46 70 40 L82 40 C90 46 92 66 82 70Z' fill='%23c25d34' stroke='%237a3418' stroke-width='1'/%3E%3Crect x='72' y='34' width='8' height='7' fill='%23c25d34' stroke='%237a3418' stroke-width='1'/%3E%3Cpath d='M86 48 C96 48 96 62 86 62' fill='none' stroke='%237a3418' stroke-width='2'/%3E%3C/g%3E%3Cg%3E%3Cellipse cx='112' cy='66' rx='16' ry='5' fill='%23e6d2a4' stroke='%238a6a3a' stroke-width='1'/%3E%3Cpath d='M100 66 C102 52 122 52 124 66Z' fill='%23d9a35a' stroke='%238a6a3a' stroke-width='1'/%3E%3Cpath d='M108 56 L110 62 M114 55 L116 62' stroke='%238a6a3a' stroke-width='.8'/%3E%3C/g%3E%3Ccircle cx='132' cy='62' r='6' fill='%23e0802a' stroke='%238a4a10' stroke-width='1'/%3E%3Cpath d='M132 56 C134 52 138 52 138 54' fill='none' stroke='%234f7a2a' stroke-width='1.5'/%3E%3C/svg%3E")}
+html[data-theme=sobremesa] .card,html[data-theme=sobremesa] .sec{background-color:#fff8e8}
+html[data-theme=sobremesa] .fab{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='38%25' cy='32%25'%3E%3Cstop offset='0' stop-color='%23ffc060'/%3E%3Cstop offset='.65' stop-color='%23e0802a'/%3E%3Cstop offset='1' stop-color='%23a84e0e'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='36' r='24' fill='url(%23g)' stroke='%237a3a08' stroke-width='1.2'/%3E%3Cpath d='M32 12 C34 5 41 4 45 7 C41 12 36 13 32 12Z' fill='%234f8a2a' stroke='%232f5a12' stroke-width='1'/%3E%3Cellipse cx='23' cy='27' rx='7' ry='4' fill='%23fff' opacity='.3' transform='rotate(-35 23 27)'/%3E%3C/svg%3E") center/contain no-repeat;border:0;border-radius:0;box-shadow:none;filter:drop-shadow(0 4px 4px rgba(120,60,10,.4));color:#fff8e8;font-size:28px;padding-top:6px}
+html[data-theme=sobremesa] nav.tabs{box-shadow:0 -4px 16px rgba(0,0,0,.15)}
+html[data-theme=brigid]{--bg:#eef3e2;--card:#fbfcf4;--ink:#24331c;--mute:#6a7d58;--line:#cddcb4;--accent:#4f8a3a;--accent-ink:#fbfcf4;--warm:#c9a63a;--warm-ink:#2a2205;--star:#c9a63a;--danger:#b3402a;--soft:#dce8c4;--sage:#cfe2b4;--blush:#f1e3c0;--sky:#d4e6ea;--font:Georgia,"Times New Roman",serif;--serif:Georgia,"Times New Roman",serif;--cover-ink:rgba(251,252,244,.85)}
+html[data-theme=brigid] header.top h1{font-style:italic;font-weight:700;color:var(--accent)}
+html[data-theme=brigid] .hello{color:var(--accent);font-style:italic}
+html[data-theme=brigid] .card,html[data-theme=brigid] .sec{border-radius:16px;border:2px solid #cddcb4;}
+html[data-theme=brigid] input,html[data-theme=brigid] select,html[data-theme=brigid] textarea,html[data-theme=brigid] .btn,html[data-theme=brigid] .chips button,html[data-theme=brigid] .seg button{border-radius:10px}
+html[data-theme=brigid] .cover{border-radius:3px 6px 6px 3px;box-shadow:inset 4px 0 0 rgba(0,0,0,.25),0 3px 8px rgba(0,0,0,.35)}
+html[data-theme=brigid] .bar i{background:repeating-linear-gradient(135deg,var(--accent) 0 8px,var(--warm) 8px 16px)}
+html[data-theme=brigid]{--bgimg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'%3E%3Cg stroke='%237aa65a' stroke-width='1.2' fill='none' opacity='.22' stroke-linecap='round'%3E%3Cpath d='M10 60 C10 46 6 40 4 34 M14 60 C14 44 16 38 20 32 M60 60 C60 48 56 42 54 36 M64 60 C66 46 70 42 74 36 M104 60 C104 48 100 44 98 38 M108 60 C110 48 114 44 116 40'/%3E%3C/g%3E%3C/svg%3E"),linear-gradient(180deg,#f2f6e6,#e6eed2)}
+html[data-theme=brigid] header.top::after{right:52px;top:calc(0px + env(safe-area-inset-top));width:64px;height:64px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Cg stroke='%23b79b3c' stroke-width='5' stroke-linecap='round'%3E%3Cpath d='M45 14 V76 M14 45 H76'/%3E%3C/g%3E%3Cg stroke='%238a722a' stroke-width='1' fill='none' opacity='.7'%3E%3Cpath d='M43 20 V70 M47 20 V70 M20 43 H70 M20 47 H70'/%3E%3C/g%3E%3Cg fill='%23d9bf5a' stroke='%238a722a' stroke-width='.8'%3E%3Cpath d='M33 33 L45 29 L57 33 L61 45 L57 57 L45 61 L33 57 L29 45Z'/%3E%3C/g%3E%3Cg stroke='%236d5a1a' stroke-width='1.3' fill='none'%3E%3Cpath d='M33 33 L57 57 M57 33 L33 57'/%3E%3C/g%3E%3Cg fill='%234f8a3a'%3E%3Crect x='42' y='8' width='6' height='8' rx='2'/%3E%3Crect x='42' y='74' width='6' height='8' rx='2'/%3E%3Crect x='8' y='42' width='8' height='6' rx='2'/%3E%3Crect x='74' y='42' width='8' height='6' rx='2'/%3E%3C/g%3E%3C/svg%3E")}
+html[data-theme=brigid] .card,html[data-theme=brigid] .sec{background-color:#fbfcf4}
+html[data-theme=brigid] .fab{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='33' r='27' fill='%23f3f1e2' stroke='%235a7a3a' stroke-width='1.4'/%3E%3Cg stroke='%23b79b3c' stroke-width='5' stroke-linecap='round'%3E%3Cpath d='M32 12 V54 M11 33 H53'/%3E%3C/g%3E%3Cpath d='M23 24 L32 21 L41 24 L44 33 L41 42 L32 45 L23 42 L20 33Z' fill='%23d9bf5a' stroke='%238a722a' stroke-width='1'/%3E%3Cpath d='M23 24 L41 42 M41 24 L23 42' stroke='%236d5a1a' stroke-width='1.2'/%3E%3C/svg%3E") center/contain no-repeat;border:0;border-radius:0;box-shadow:none;filter:drop-shadow(0 4px 4px rgba(40,80,20,.35));color:#24331c;font-size:28px;padding-top:6px}
+html[data-theme=brigid] nav.tabs{box-shadow:0 -4px 16px rgba(0,0,0,.15)}
+html[data-theme=valentine]{--bg:#fdeef0;--card:#fffafa;--ink:#4a1f2e;--mute:#9a6a78;--line:#f2cdd6;--accent:#c43a5a;--accent-ink:#ffffff;--warm:#e86f93;--warm-ink:#ffffff;--star:#e8a33a;--danger:#a82a2a;--soft:#fbd9e0;--sage:#e3ead0;--blush:#f9c9d3;--sky:#e0e3f3;--font:Georgia,"Times New Roman",serif;--serif:Georgia,"Times New Roman",serif;--cover-ink:rgba(255,250,250,.9)}
+html[data-theme=valentine] header.top h1{font-style:italic;font-weight:700;color:var(--accent)}
+html[data-theme=valentine] .hello{color:var(--accent);font-style:italic}
+html[data-theme=valentine] .card,html[data-theme=valentine] .sec{border-radius:16px;border:2px solid #f2cdd6;}
+html[data-theme=valentine] input,html[data-theme=valentine] select,html[data-theme=valentine] textarea,html[data-theme=valentine] .btn,html[data-theme=valentine] .chips button,html[data-theme=valentine] .seg button{border-radius:10px}
+html[data-theme=valentine] .cover{border-radius:3px 6px 6px 3px;box-shadow:inset 4px 0 0 rgba(0,0,0,.25),0 3px 8px rgba(0,0,0,.35)}
+html[data-theme=valentine] .bar i{background:repeating-linear-gradient(135deg,var(--accent) 0 8px,var(--warm) 8px 16px)}
+html[data-theme=valentine]{--bgimg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath transform='translate(24 26) scale(0.9)' d='M0 8 C-12 -2 -8 -12 0 -5 C8 -12 12 -2 0 8Z' fill='%23e86f93' opacity='0.14'/%3E%3Cpath transform='translate(84 70) scale(1.2)' d='M0 8 C-12 -2 -8 -12 0 -5 C8 -12 12 -2 0 8Z' fill='%23c43a5a' opacity='0.1'/%3E%3Cpath transform='translate(50 100) scale(0.7)' d='M0 8 C-12 -2 -8 -12 0 -5 C8 -12 12 -2 0 8Z' fill='%23e86f93' opacity='0.12'/%3E%3Cpath transform='translate(104 16) scale(0.6)' d='M0 8 C-12 -2 -8 -12 0 -5 C8 -12 12 -2 0 8Z' fill='%23c43a5a' opacity='0.12'/%3E%3C/svg%3E"),linear-gradient(180deg,#fff2f3,#fbe3e8)}
+html[data-theme=valentine] header.top::after{right:52px;top:calc(0px + env(safe-area-inset-top));width:84px;height:60px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='64' viewBox='0 0 90 64'%3E%3Crect x='8' y='14' width='64' height='42' rx='3' fill='%23fff3f0' stroke='%23c43a5a' stroke-width='1.4' transform='rotate(-6 40 35)'/%3E%3Cpath d='M8 16 L40 40 L72 16' fill='none' stroke='%23c43a5a' stroke-width='1.4' transform='rotate(-6 40 35)'/%3E%3Cpath transform='translate(40 40) scale(1.3)' d='M0 8 C-12 -2 -8 -12 0 -5 C8 -12 12 -2 0 8Z' fill='%23d8335a' stroke='%238a1a38' stroke-width='1'/%3E%3Cpath transform='translate(78 12) scale(1)' d='M0 8 C-12 -2 -8 -12 0 -5 C8 -12 12 -2 0 8Z' fill='%23e86f93' /%3E%3Cpath transform='translate(14 8) scale(0.7)' d='M0 8 C-12 -2 -8 -12 0 -5 C8 -12 12 -2 0 8Z' fill='%23e86f93' /%3E%3C/svg%3E")}
+html[data-theme=valentine] .card,html[data-theme=valentine] .sec{background-color:#fffafa}
+html[data-theme=valentine] .fab{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='36%25' cy='30%25'%3E%3Cstop offset='0' stop-color='%23ff8aa6'/%3E%3Cstop offset='.65' stop-color='%23d8335a'/%3E%3Cstop offset='1' stop-color='%238a1a38'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M32 56 C6 38 8 14 22 12 C28 11 31 15 32 19 C33 15 36 11 42 12 C56 14 58 38 32 56Z' fill='url(%23g)' stroke='%236a1028' stroke-width='1.3'/%3E%3Cellipse cx='21' cy='23' rx='6' ry='3.4' fill='%23fff' opacity='.4' transform='rotate(-35 21 23)'/%3E%3C/svg%3E") center/contain no-repeat;border:0;border-radius:0;box-shadow:none;filter:drop-shadow(0 4px 5px rgba(140,20,50,.4));color:#ffffff;font-size:28px;padding-top:6px}
+html[data-theme=valentine] nav.tabs{box-shadow:0 -4px 16px rgba(0,0,0,.15)}
+html[data-theme=patrick]{--bg:#e6f3e2;--card:#f8fcf5;--ink:#15301d;--mute:#5f7f66;--line:#bfdcc0;--accent:#1f8a4a;--accent-ink:#ffffff;--warm:#e0a929;--warm-ink:#2a1e04;--star:#e0a929;--danger:#b3302a;--soft:#cfe8cb;--sage:#bfe2bb;--blush:#f5e4b8;--sky:#cfe4ea;--font:Georgia,"Times New Roman",serif;--serif:Georgia,"Times New Roman",serif;--cover-ink:rgba(248,252,245,.9)}
+html[data-theme=patrick] header.top h1{font-style:italic;font-weight:700;color:var(--accent)}
+html[data-theme=patrick] .hello{color:var(--accent);font-style:italic}
+html[data-theme=patrick] .card,html[data-theme=patrick] .sec{border-radius:16px;border:2px solid #bfdcc0;}
+html[data-theme=patrick] input,html[data-theme=patrick] select,html[data-theme=patrick] textarea,html[data-theme=patrick] .btn,html[data-theme=patrick] .chips button,html[data-theme=patrick] .seg button{border-radius:10px}
+html[data-theme=patrick] .cover{border-radius:3px 6px 6px 3px;box-shadow:inset 4px 0 0 rgba(0,0,0,.25),0 3px 8px rgba(0,0,0,.35)}
+html[data-theme=patrick] .bar i{background:repeating-linear-gradient(135deg,var(--accent) 0 8px,var(--warm) 8px 16px)}
+html[data-theme=patrick]{--bgimg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg opacity='.14'%3E%3Cg transform='translate(26 30) scale(1)' fill='%232f9a4a' stroke='%231a5a2a' stroke-width='1'%3E%3Cpath d='M0 0 C-4 -9 -14 -8 -12 -2 C-10 3 -4 2 0 0Z'/%3E%3Cpath d='M0 0 C4 -9 14 -8 12 -2 C10 3 4 2 0 0Z'/%3E%3Cpath d='M0 0 C-8 4 -9 14 -3 12 C2 10 2 4 0 0Z'/%3E%3Cpath d='M0 0 C8 4 9 14 3 12 C-2 10 -2 4 0 0Z' opacity='0'/%3E%3Cpath d='M0 4 Q2 14 6 20' fill='none' stroke-width='1.6'/%3E%3C/g%3E%3Cg transform='translate(88 74) scale(1.2)' fill='%232f9a4a' stroke='%231a5a2a' stroke-width='1'%3E%3Cpath d='M0 0 C-4 -9 -14 -8 -12 -2 C-10 3 -4 2 0 0Z'/%3E%3Cpath d='M0 0 C4 -9 14 -8 12 -2 C10 3 4 2 0 0Z'/%3E%3Cpath d='M0 0 C-8 4 -9 14 -3 12 C2 10 2 4 0 0Z'/%3E%3Cpath d='M0 0 C8 4 9 14 3 12 C-2 10 -2 4 0 0Z' opacity='0'/%3E%3Cpath d='M0 4 Q2 14 6 20' fill='none' stroke-width='1.6'/%3E%3C/g%3E%3Cg transform='translate(40 102) scale(0.8)' fill='%232f9a4a' stroke='%231a5a2a' stroke-width='1'%3E%3Cpath d='M0 0 C-4 -9 -14 -8 -12 -2 C-10 3 -4 2 0 0Z'/%3E%3Cpath d='M0 0 C4 -9 14 -8 12 -2 C10 3 4 2 0 0Z'/%3E%3Cpath d='M0 0 C-8 4 -9 14 -3 12 C2 10 2 4 0 0Z'/%3E%3Cpath d='M0 0 C8 4 9 14 3 12 C-2 10 -2 4 0 0Z' opacity='0'/%3E%3Cpath d='M0 4 Q2 14 6 20' fill='none' stroke-width='1.6'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),linear-gradient(180deg,#eaf6e6,#d9edd3)}
+html[data-theme=patrick] header.top::after{right:52px;top:calc(0px + env(safe-area-inset-top));width:112px;height:64px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='70' viewBox='0 0 120 70'%3E%3Cpath d='M10 40 A44 44 0 0 1 98 40' fill='none' stroke='%23e24a4a' stroke-width='3' opacity='.55'/%3E%3Cpath d='M14 40 A40 40 0 0 1 94 40' fill='none' stroke='%23f2c14e' stroke-width='3' opacity='.6'/%3E%3Cpath d='M18 40 A36 36 0 0 1 90 40' fill='none' stroke='%234fb06a' stroke-width='3' opacity='.6'/%3E%3Cpath d='M22 40 A32 32 0 0 1 86 40' fill='none' stroke='%235aa9e6' stroke-width='3' opacity='.55'/%3E%3Cpath d='M88 46 C84 62 118 62 114 46Z' fill='%232a2a2a' stroke='%23111' stroke-width='1'/%3E%3Cellipse cx='101' cy='46' rx='14' ry='4' fill='%233a3a3a' stroke='%23111' stroke-width='1'/%3E%3Cg fill='%23f2c14e' stroke='%23a8801a' stroke-width='.8'%3E%3Ccircle cx='94' cy='42' r='4'/%3E%3Ccircle cx='102' cy='40' r='4'/%3E%3Ccircle cx='109' cy='43' r='4'/%3E%3C/g%3E%3Cg transform='translate(26 56) scale(0.9)' fill='%233aa85a' stroke='%231a5a2a' stroke-width='1'%3E%3Cpath d='M0 0 C-4 -9 -14 -8 -12 -2 C-10 3 -4 2 0 0Z'/%3E%3Cpath d='M0 0 C4 -9 14 -8 12 -2 C10 3 4 2 0 0Z'/%3E%3Cpath d='M0 0 C-8 4 -9 14 -3 12 C2 10 2 4 0 0Z'/%3E%3Cpath d='M0 0 C8 4 9 14 3 12 C-2 10 -2 4 0 0Z' opacity='0'/%3E%3Cpath d='M0 4 Q2 14 6 20' fill='none' stroke-width='1.6'/%3E%3C/g%3E%3C/svg%3E")}
+html[data-theme=patrick] .card,html[data-theme=patrick] .sec{background-color:#f8fcf5}
+html[data-theme=patrick] .fab{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='33' r='27' fill='%23e8f5e4' stroke='%231a5a2a' stroke-width='1.4'/%3E%3Cg fill='%232f9a4a' stroke='%231a5a2a' stroke-width='1.2'%3E%3Cpath d='M32 30 C26 14 10 16 14 26 C17 34 28 34 32 30Z'/%3E%3Cpath d='M32 30 C38 14 54 16 50 26 C47 34 36 34 32 30Z'/%3E%3Cpath d='M32 30 C20 34 18 50 28 48 C34 46 33 38 32 30Z'/%3E%3Cpath d='M32 30 C44 34 46 50 36 48 C30 46 31 38 32 30Z'/%3E%3C/g%3E%3Cpath d='M32 40 Q35 52 42 58' fill='none' stroke='%231a5a2a' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;border:0;border-radius:0;box-shadow:none;filter:drop-shadow(0 4px 4px rgba(20,80,40,.35));color:#15301d;font-size:28px;padding-top:6px}
+html[data-theme=patrick] nav.tabs{box-shadow:0 -4px 16px rgba(0,0,0,.15)}
 /* trophies */
 .tsvg{display:block;margin:0 auto}
 .tlock{filter:grayscale(1);opacity:.35}
@@ -515,6 +565,16 @@ html[data-theme=scifi] .tchip{border-radius:4px;text-transform:uppercase;letter-
 .mcards{display:grid;gap:8px;margin:6px 0 10px}
 .mcard{display:flex;flex-direction:column;gap:2px;padding:10px 12px 10px 18px;border:2px solid;border-radius:12px;font-size:13px}
 .mcard b{font-size:15px}.mcard span{opacity:.85}
+
+.ddcard{display:flex;align-items:center;gap:12px;margin:2px 0 10px;padding:10px 34px 10px 12px;border-radius:14px;background:var(--card);border:1.5px solid var(--line);position:relative}
+.ddcard.sp{border-color:var(--accent)}
+.ddcard p{margin:0;font-size:14px;line-height:1.4;color:var(--ink);font-family:var(--serif)}
+.ddx{position:absolute;right:6px;top:4px;border:0;background:none;color:var(--mute);font-size:20px;line-height:1;padding:4px 8px;cursor:pointer}
+.dsv{width:52px;height:52px;flex:none;color:var(--ink)}
+.dsv .l{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dsv .a{fill:var(--accent);stroke:currentColor;stroke-width:2;stroke-linejoin:round;opacity:.9}
+.dsv .w{fill:var(--warm);stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.nh{margin:12px 0 4px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -552,7 +612,12 @@ const THEMES={
  save:{name:'Plotstation',icon:'💾',dots:['#4d8dff','#22d3ee','#0a1230'],title:'Plotstation',stats:'Session Stats',hello:'Progress saved.',nav:['💾','📊','🏆','⚙️'],tw:'Achievement unlocked!',troph:'Trophy Room',semo:{want:'🎁',reading:'🎮',finished:'💾',dnf:'💤'},big:'💾',pastel:['#16255a','#12306a','#1b2f5a','#243a7a','#1a2a4a','#2a3a6a','#102a50'],meta:'#0a1230'},
  spawn:{name:'Tomebox',icon:'♻️',dots:['#3ddc57','#b6ff3c','#0c130c'],title:'Tomebox',stats:'Run Report',hello:'New life, new chapter.',nav:['♻️','📊','🏆','⚙️'],tw:'Achievement unlocked!',troph:'Hall of Runs',semo:{want:'🎁',reading:'🎮',finished:'✅',dnf:'💀'},big:'♻️',pastel:['#1b2e1b','#1d3a22','#27402a','#183018','#22402a','#1a3a32','#2a4a22'],meta:'#0c130c'},
  crystal:{name:'Crystal Chronicle',icon:'💎',dots:['#ffd36b','#14307f','#8fe3ff'],title:'Crystal Chronicle',stats:'Party Status',hello:'The crystals are waiting.',nav:['💎','📊','🏆','⚙️'],tw:'Victory!',troph:'Chronicle of Feats',semo:{want:'🗡️',reading:'📖',finished:'💎',dnf:'🍂'},big:'💎',pastel:['#1a3a96','#143a6a','#3a2a7a','#1a4aa0','#2a3a8a','#14407a','#2a2a6a'],meta:'#0a1442'},
- bonus:{name:'Flipswitch',icon:'⭐',dots:['#e60012','#0a8ad6','#fff7f0'],title:'Flipswitch',stats:'High Scores',hello:'Extra stage unlocked!',nav:['⭐','📊','🏆','⚙️'],tw:'Level clear!',troph:'High Score Wall',semo:{want:'🎁',reading:'🎮',finished:'⭐',dnf:'💤'},big:'⭐',pastel:['#ffd0d0','#d3ecff','#fff0b0','#d6f0d0','#ffd9b0','#e6d3ff','#ffe3e0'],meta:'#fff7f0'}
+ bonus:{name:'Flipswitch',icon:'⭐',dots:['#e60012','#0a8ad6','#fff7f0'],title:'Flipswitch',stats:'High Scores',hello:'Extra stage unlocked!',nav:['⭐','📊','🏆','⚙️'],tw:'Level clear!',troph:'High Score Wall',semo:{want:'🎁',reading:'🎮',finished:'⭐',dnf:'💤'},big:'⭐',pastel:['#ffd0d0','#d3ecff','#fff0b0','#d6f0d0','#ffd9b0','#e6d3ff','#ffe3e0'],meta:'#fff7f0'},
+ sobremesa:{name:'Sobremesa',icon:'🍊',dots:['#b5532a','#e0a33a','#f6ead2'],title:'La Sobremesa',stats:'The Long Lunch Report',hello:'Stay a while. The coffee is still warm.',nav:['🍊','🕯️','🍷','☕'],tw:'¡Qué bien!',troph:'The Sideboard',semo:{want:'🍞',reading:'🍊',finished:'🕯️',dnf:'🥄'},big:'🍊',pastel:['#f2c9a8','#e8d49a','#d6dcb4','#e6b8a0','#cfdde0','#f0d6b0','#dcc0a0'],meta:'#f6ead2'},
+ brigid:{name:'St Brigid',icon:'☘️',dots:['#4f8a3a','#c9a63a','#eef3e2'],title:'The Rush Shelf',stats:'Spring Is Coming Report',hello:'Spring begins today. Read something green.',nav:['☘️','🌾','🕯️','🐑'],tw:'Well woven!',troph:'The Hearth',semo:{want:'🌾',reading:'🕯️',finished:'☘️',dnf:'🍂'},big:'☘️',pastel:['#cfe2b4','#e6d79a','#d4e6ea','#f1e3c0','#dcd0b0','#c2dcb0','#e8e4c8'],meta:'#eef3e2'},
+ valentine:{name:'St Valentine',icon:'💌',dots:['#c43a5a','#e86f93','#fdeef0'],title:'Love Letters',stats:'The Heart Report',hello:'Someone special is waiting. It is the next chapter.',nav:['💌','💘','🌹','🍫'],tw:'Aww!',troph:'The Keepsake Box',semo:{want:'💌',reading:'💘',finished:'❤️',dnf:'💔'},big:'💘',pastel:['#f9c9d3','#fbd9e0','#e0e3f3','#f2cdd6','#f5d7b8','#e8c8e0','#fadadd'],meta:'#fdeef0'},
+ patrick:{name:'St Patrick',icon:'🍀',dots:['#1f8a4a','#e0a929','#e6f3e2'],title:'The Green Shelf',stats:'The Luck Report',hello:'Lucky you. A good book and a quiet seat.',nav:['🍀','🌈','🪙','🎩'],tw:'Grand job!',troph:'The Pot of Gold',semo:{want:'🪙',reading:'🍀',finished:'🌈',dnf:'🎩'},big:'🍀',pastel:['#bfe2bb','#f5e4b8','#cfe4ea','#d4eac8','#e8dcb0','#c2dcb0','#dfeec8'],meta:'#e6f3e2'}
+
 };
 let theme='nook';try{theme=localStorage.getItem('shelf.theme')||'nook'}catch(e){}
 if(!THEMES[theme])theme='nook';
@@ -610,12 +675,12 @@ function hello(){return T().hello}
 function renderLibrary(){
   const counts={all:db.books.length,rep:db.books.filter(b=>b.rep).length};Object.keys(STATUS).forEach(k=>counts[k]=db.books.filter(b=>b.status===k&&!b.rep).length);
   const chips=['all',...Object.keys(STATUS),'rep'].filter(k=>k!=='rep'||counts.rep||ui.status==='rep').map(k=>`<button data-status="${k}" class="${ui.status===k?'on':''}">${k==='all'?'All':k==='rep'?'🔁 On repeat':STATUS[k]} ${counts[k]}</button>`).join('');
-  $('#tools').innerHTML=`<p class="hello">${hello()}</p>${chipBtn()}${stripHTML()}<input id="q" type="search" placeholder="Search title, author, series, tag" value="${esc(ui.q)}">
+  $('#tools').innerHTML=`<p class="hello">${hello()}</p>${doodleCard()}${chipBtn()}${stripHTML()}<input id="q" type="search" placeholder="Search title, author, series, tag" value="${esc(ui.q)}">
   <div class="chips">${chips}</div>
   <div class="row2"><select id="sort">${[['added','Recently added'],['title','Title'],['author','Author'],['rating','Rating'],['finished','Date finished']].map(([v,t])=>`<option value="${v}" ${ui.sort===v?'selected':''}>${t}</option>`).join('')}</select>
   <select id="fmt"><option value="all">All formats</option>${FORMATS.map(f=>`<option ${ui.format===f?'selected':''}>${f}</option>`).join('')}</select></div>`;
   const l=filtered();
-  $('#main').innerHTML=l.length?l.map(card).join(''):`<div class="empty">${db.books.length?'Nothing on the shelf matches that.':'<span class="big">${T().big}</span>Your shelf is waiting for its first book.<br>Tap + to add one, or bring your Goodreads shelf over in Settings.'}</div>`;
+  $('#main').innerHTML=l.length?l.map(card).join(''):`<div class="empty">${db.books.length?'Nothing on the shelf matches that.':`<span class="big">${T().big}</span>Your shelf is waiting for its first book.<br>Tap + to add one, or bring your Goodreads shelf over in Settings.`}</div>`;
 }
 
 /* ---------- Stats ---------- */
@@ -1144,7 +1209,7 @@ function levelsNow(){
 }
 function candDates(){
   const s=new Set();myBooks().forEach(b=>{if(b.rep)return;s.add(b.added);b.reads.forEach(r=>{s.add(r.start);s.add(r.end)})});
-  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl'&&k!=='tbest'&&k!=='card')s.add(f[k])});
+  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl'&&k!=='tbest'&&k!=='card'&&k!=='dd'&&k!=='nick')s.add(f[k])});
   let a=[...s].filter(x=>/^\d{4}-\d\d-\d\d$/.test(x)).sort();
   if(a.length>240){const k=Math.ceil(a.length/240),b=[];for(let i=k-1;i<a.length;i+=k)b.push(a[i]);if(b[b.length-1]!==a[a.length-1])b.push(a[a.length-1]);a=b}
   return a;
@@ -1189,7 +1254,11 @@ const SK={
  regency:{f:['#e4b8a0','#e8e6ee','#f1d78a','#c8e0f0','#e2cdf2'],s:['#8a5a44','#8b8aa0','#a07d1c','#4f7fa5','#8a62b0'],a:'#6a4a5a',r:'#4f78a6',w:1.4,body:'pearl'},
  meadow:{f:['#e9b78a','#dfe6ea','#f3d27a','#b9e0ea','#d9c6ee'],s:['#8a5a30','#6f8590','#9a7a20','#3f8aa0','#7a5aa8'],a:'#2f4a3a',r:'#3d8a58',w:1.5,body:'flower'},
  hallow:{f:['#c5702a','#cfc8dc','#f0b82e','#7de0c0','#d9a5ff'],s:['#4a2008','#5a5470','#8a5e00','#1f7a62','#7a3fb8'],a:'#1a0f10',r:'#8ad14f',w:2,body:'pumpkin'},
- yule:{f:['#b87333','#dfe6ee','#f5cf4a','#bfe6f5','#e6c9ff'],s:['#5a2d10','#5f6e82','#8a6a00','#2f86a8','#7a4bb0'],a:'#1c2a1f',r:'#c8312f',w:1.8,body:'bauble'}
+ yule:{f:['#b87333','#dfe6ee','#f5cf4a','#bfe6f5','#e6c9ff'],s:['#5a2d10','#5f6e82','#8a6a00','#2f86a8','#7a4bb0'],a:'#1c2a1f',r:'#c8312f',w:1.8,body:'bauble'},
+ sobremesa:{f:['#c0703a','#e0d6c0','#e8b64a','#a8d4d8','#dcb4e0'],s:['#5a2a10','#6a6250','#8a6a10','#2f7a82','#7a4a8a'],a:'#3b2418',r:'#b5532a',w:1.8,body:'seal'},
+ brigid:{f:['#a8b068','#dde6d0','#e0c55a','#a8d8d4','#d6c0ea'],s:['#3f5a20','#5a6a50','#8a722a','#2f7a74','#6a4a8f'],a:'#24331c',r:'#4f8a3a',w:1.8,body:'star'},
+ valentine:{f:['#e07a90','#eadde2','#f0c24a','#a8d4ee','#d6b4ea'],s:['#6a1028','#7a6a72','#8a6a10','#2f6a9a','#6a3a8f'],a:'#4a1f2e',r:'#c43a5a',w:1.8,body:'pearl'},
+ patrick:{f:['#5aa870','#dde8dc','#e8b83a','#a8d4e0','#d4c0ea'],s:['#1a5a2a','#5a6a5a','#8a6a10','#2f6f8a','#6a4a8f'],a:'#15301d',r:'#1f8a4a',w:1.8,body:'flower'}
 };
 const pk=(x,i)=>Array.isArray(x)?x[i]:x;
 function trophySVG(t,lvl,o){
@@ -1332,7 +1401,11 @@ const RANKS={
  save:['Tutorial Reader','Button Masher','Side Quester','Party Member','Item Collector','Dungeon Crawler','Boss Slayer','Speedrunner','Completionist','Lore Keeper','Platinum Reader','Grandmaster','Raid Leader','Legend','Mythic','Final Boss'],
  spawn:['New Game','Respawn','Checkpoint','Extra Life','Power Up','Combo Maker','Level Up','Loot Goblin','Achievement Hunter','Speed Reader','Pro Gamer','Veteran','Elite','Champion','Legendary','Game Master'],
  bonus:['Press Start','Coin Hunter','Warp Finder','Bonus Seeker','Secret Finder','Stage Clearer','Combo King','High Scorer','Hidden Room','Star Collector','Streak Master','World Walker','Boss Beater','Hall of Famer','Credits Roll','New Game Plus'],
- yule:['Carol Singer','Snowflake','Cocoa Sipper','Mitten Knitter','Wreath Maker','Sleigh Rider','Tree Trimmer','Gift Wrapper','Stocking Stuffer','Candle Lighter','Yule Reader','Snow Keeper','Star Bearer','Winter Sage','Midwinter Spirit','Yuletide Legend']
+ yule:['Carol Singer','Snowflake','Cocoa Sipper','Mitten Knitter','Wreath Maker','Sleigh Rider','Tree Trimmer','Gift Wrapper','Stocking Stuffer','Candle Lighter','Yule Reader','Snow Keeper','Star Bearer','Winter Sage','Midwinter Spirit','Yuletide Legend'],
+ sobremesa:['Guest','Dinner Guest','Bread Breaker','Tapas Taster','Wine Pourer','Table Talker','Coffee Sipper','Storyteller','Long Lunch Regular','Raconteur','Host','Master of the Table','Sobremesa Sage','Keeper of the Table','Guest of Honour','Legend of the Long Lunch'],
+ brigid:['Rush Gatherer','Reed Cutter','Cross Folder','Cross Weaver','Hearth Tender','Well Visitor','Spring Watcher','Candle Bearer','Lamb Minder','Dairy Keeper','Healer','Keeper of the Flame','Abbess','Mother of Spring','Lady of the Hearth','Legend of Imbolc'],
+ valentine:['Admirer','Pen Pal','Note Passer','Poet','Flower Giver','Chocolate Sharer','Letter Writer','Serenader','Sweetheart','Romantic','Heartthrob','Cupid’s Friend','Lovebird','Grand Romantic','Soulmate','Legend of Love'],
+ patrick:['Shamrock Spotter','Clover Finder','Wee Reader','Tin Whistler','Storyteller','Piper','Seanchaí','Bard','Rainbow Chaser','Leprechaun’s Friend','Pot of Gold Keeper','Lucky Reader','Green Sage','Master Bard','High Seanchaí','Legend of the Emerald Isle']
 };
 /* flair: [key, title, trophy id, level needed] */
 const FLAIR=[
@@ -1379,7 +1452,7 @@ const isFin=b=>(b.reads||[]).some(r=>r.end)||(!STRICT&&b.status==='finished');
 const kwHit=(b,id)=>{const t=(b.genres||[]).join(' ').toLowerCase(),f=(b.format||'').toLowerCase();return KW[id].some(k=>t.includes(k))||(id==='comic'&&/comic|manga|graphic/.test(f))};
 const gCount=id=>myBooks().filter(b=>!b.rep&&isFin(b)&&kwHit(b,id)).length;
 const nTro=()=>{try{return earnedN(trophyState())}catch(e){return 0}};
-function inSeason(id){const d=new Date(),m=d.getMonth()+1,day=d.getDate();if(id==='hallow')return m===10||(m===11&&day<=2);if(id==='yule')return m===12||(m===1&&day<=6);return false}
+function inSeason(id){const d=new Date(),m=d.getMonth()+1,day=d.getDate();if(id==='hallow')return m===10||(m===11&&day<=2);if(id==='yule')return m===12||(m===1&&day<=6);if(id==='sobremesa')return m===10;if(id==='brigid'||id==='valentine')return m===2;if(id==='patrick')return m===3;return false}
 const verified=()=>!!(st.user&&st.user.emailVerified);
 const RULES={
  nook:{need:'',ok:()=>true},
@@ -1395,6 +1468,10 @@ const RULES={
  crystal:{need:'Finish 2 books based on video games (tag: video game, or the game’s name)',ok:()=>gCount('crystal')>=2},
  hallow:{need:'Open Shelf in Hallowe’en week',ok:()=>inSeason('hallow')},
  yule:{need:'Open Shelf during Yuletide',ok:()=>inSeason('yule')},
+ sobremesa:{need:'Open Shelf during October',ok:()=>inSeason('sobremesa')},
+ brigid:{need:'Open Shelf during February',ok:()=>inSeason('brigid')},
+ valentine:{need:'Open Shelf during February',ok:()=>inSeason('valentine')},
+ patrick:{need:'Open Shelf during March',ok:()=>inSeason('patrick')},
  save:{need:'Verify your account',ok:verified},
  spawn:{need:'Verify your account',ok:verified},
  bonus:{need:'Verify your account',ok:verified}
@@ -1420,7 +1497,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -1434,15 +1511,23 @@ function notify(id,m,i){
   const N=NT();if(N[id])return;
   N[id]={m,i:i||'🔔',at:Date.now(),r:0,x:0};persistLocal();scheduleSync();bellDot();
 }
+const NI={tr:'🏆',rank:'🎖️',flair:'🏅',theme:'🎨',hh:'👥',chg:'📚',wel:'📚'};
+const isNews=k=>/^(chg|wel):/.test(k);
+const niOf=k=>NI[k.split(':')[0]]||'🔔';
 function openBell(){
-  const list=Object.entries(NT()).filter(([k,n])=>!n.x).sort((a,b)=>b[1].at-a[1].at).slice(0,40);
-  const rows=list.length?list.map(([k,n])=>`<div class="nrow${n.r?'':' new'}"><span class="ni">${n.i}</span><div><div>${esc(n.m)}</div><small class="note">${new Date(n.at).toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</small></div></div>`).join(''):'<p class="note">Nothing yet. Trophies, ranks, themes and update notes will appear here, once for all your devices.</p>';
-  $('#tdet').innerHTML=`<div class="tcard ttl"><h2>Notifications</h2><div class="nlist">${rows}</div><div class="setrow" style="justify-content:center">${list.length?'<button class="btn" data-act="nclear">Clear all</button>':''}<button class="btn p" data-act="tclose">Done</button></div></div>`;
-  $('#tdet').hidden=false;list.forEach(([k,n])=>{n.r=1});persistLocal();scheduleSync();bellDot();
+  const all=Object.entries(NT()).filter(([k,n])=>!n.x).sort((a,b)=>b[1].at-a[1].at);
+  const row=([k,n])=>`<div class="nrow${n.r?'':' new'}"><span class="ni">${niOf(k)}</span><div><div>${esc(n.m)}</div><small class="note">${new Date(n.at).toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</small></div></div>`;
+  const act=all.filter(([k])=>!isNews(k)).slice(0,30),nws=all.filter(([k])=>isNews(k)).slice(0,20);
+  const part=(h,l)=>l.length?`<h4 class="nh">${h}</h4>${l.map(row).join('')}`:'';
+  const rows=(act.length||nws.length)?part('Activity',act)+part('News',nws):'<p class="note">Nothing yet. Trophies, ranks, themes and update notes will appear here, once for all your devices.</p>';
+  $('#tdet').innerHTML=`<div class="tcard ttl"><h2>Notifications</h2><div class="nlist">${rows}</div><div class="setrow" style="justify-content:center">${all.length?'<button class="btn" data-act="nclear">Clear all</button>':''}<button class="btn p" data-act="tclose">Done</button></div></div>`;
+  $('#tdet').hidden=false;[...act,...nws].forEach(([k,n])=>{n.r=1});persistLocal();scheduleSync();bellDot();
 }
 function notesInit(){
   try{localStorage.removeItem('shelf.notes');localStorage.removeItem('shelf.tu');localStorage.removeItem('shelf.chg')}catch(e){}
-  CHANGES.forEach(c=>notify(c.id,c.m,c.i));
+  const fresh=!Object.keys(NT()).length&&!db.books.length;
+  if(fresh)notify('wel:1','Welcome to Shelf. Add your first book and it will appear on your shelf. Trophies, ranks and themes turn up as you read. Everything stays on this device unless you switch on sync in Settings.','📚');
+  CHANGES.forEach((c,i)=>{if(fresh&&i>0)return;notify(c.id,c.m,c.i)});
 }
 function rankBar(S){
   const n=earnedN(S),cur=rankIdx(n),names=RANKS[theme]||RANKS.nook;
@@ -1509,6 +1594,7 @@ function mergeFlags(a,b){
       const x=a[k]||{},y=b[k]||{};v={};
       new Set([...Object.keys(x),...Object.keys(y)]).forEach(i=>{v[i]=(k==='seen'||k==='tbest')?Math.max(+x[i]||0,+y[i]||0):(!x[i]?y[i]:!y[i]?x[i]:(x[i]<y[i]?x[i]:y[i]))});
     }else if(k==='title')v=mergeTitle(a[k],b[k]);
+    else if(k==='dd'){const x=a[k]||'',y=b[k]||'';v=x>y?x:y}
     else if(k==='nick'||k==='card'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
     else{const x=a[k],y=b[k];v=!x?y:!y?x:(x<y?x:y)}
     if(v!==undefined)o[k]=v;
@@ -1736,7 +1822,7 @@ async function hhAct(kind,arg){
       const h=hhInv.find(x=>x.id===arg);if(!h){hhBusy=false;return}
       const n=myBooks().length,share=n&&confirm('Add the '+n+' books on this shelf to the shared library? Choose Cancel to keep them private.');
       await F.updateDoc(F.doc(fs,'households',arg),{members:F.arrayUnion(u.uid),invited:F.arrayRemove(u.email.toLowerCase()),['names.'+u.uid]:hhName()});
-      S.hid=arg;S.hlast=0;if(share)hhShareAll();else db.books.forEach(b=>b.np=1);toast('Joined. Shared books are arriving. They count for you only once you add your own status, dates or rating.');
+      S.hid=arg;S.hlast=0;if(share)hhShareAll();else db.books.forEach(b=>b.np=1);try{notify('hh:join:'+arg,'You have joined '+(h.name||'a household')+'. Shared books count for you once you add your own status, dates or rating.','👥')}catch(e){}toast('Joined. Shared books are arriving. They count for you only once you add your own status, dates or rating.');
     }else if(kind==='leave'){
       const mine=myBooks().filter(b=>b.hh).length;
       if(!confirm('Leave this household? Books you have used stay on your shelf as private books. Shared books you have not touched are removed from this shelf.')){hhBusy=false;return}
@@ -1779,6 +1865,104 @@ document.addEventListener('change',e=>{
   const c=cardCfg();db.flags.card={c:t.id==='hhColour'?t.value:(c.c||cardTheme()),on:t.id==='hhShow'?(t.checked?1:0):(c.on===0?0:1),at:Date.now()};
   persistLocal();scheduleSync();sync(true);
 });
+
+/* ---------- Daily doodle ---------- */
+const DOODLE_END='2027-01-09';
+const DSV=k=>`<svg class="dsv" viewBox="0 0 64 64" aria-hidden="true">${DD[k]||DD.book}</svg>`;
+const DD={
+ book:'<rect class="a" x="12" y="20" width="40" height="30" rx="3"/><path class="l" d="M32 20V50M18 28H27M37 28H46"/>',
+ dosto:'<rect class="a" x="10" y="42" width="44" height="8" rx="2"/><rect class="w" x="14" y="34" width="36" height="8" rx="2"/><rect class="l" x="20" y="28" width="26" height="6" rx="2"/><path class="l" d="M32 28V16"/><path class="w" d="M32 6C27 11 28 15 32 15C36 15 37 11 32 6Z"/>',
+ cottage:'<path class="a" d="M12 52V30L32 14L52 30V52Z"/><rect class="l" x="26" y="36" width="12" height="16"/><circle class="w" cx="46" cy="40" r="4"/><path class="l" d="M46 32V36"/>',
+ drum:'<ellipse class="w" cx="32" cy="20" rx="18" ry="6"/><path class="a" d="M14 20L18 48Q32 56 46 48L50 20Q32 28 14 20Z"/><path class="l" d="M18 28L26 46M30 30V50M46 28L38 46"/>',
+ hat:'<rect class="a" x="10" y="44" width="44" height="10" rx="2"/><path class="l" d="M12 44H52"/><rect class="w" x="22" y="14" width="20" height="24" rx="3"/><path class="l" d="M18 38H46"/><rect class="l" x="22" y="30" width="20" height="4"/>',
+ quill:'<path class="w" d="M50 8C34 10 22 24 18 44L22 42C32 40 44 28 50 8Z"/><path class="l" d="M18 46L14 56M26 36L38 26"/><path class="a" d="M40 56H58L54 46H44Z"/><path class="l" d="M49 46V38"/>',
+ specs:'<rect class="a" x="8" y="38" width="48" height="14" rx="2"/><circle class="l" cx="22" cy="26" r="9"/><circle class="l" cx="42" cy="26" r="9"/><path class="l" d="M31 25Q32 22 33 25M13 22L6 18M51 22L58 18"/>',
+ peach:'<path class="w" d="M32 56C14 56 8 38 16 26C22 18 28 22 32 24C36 22 42 18 48 26C56 38 50 56 32 56Z"/><path class="l" d="M32 24Q30 36 32 48"/><path class="a" d="M32 24C32 14 38 10 46 10C44 18 38 22 32 24Z"/>',
+ key:'<rect class="a" x="34" y="10" width="20" height="44" rx="3"/><circle class="w" cx="40" cy="34" r="2"/><circle class="w" cx="20" cy="26" r="9"/><path class="l" d="M26 32L42 48M36 42L32 46M41 47L37 51"/>',
+ steps:'<path class="l" d="M6 54H58M10 48H54M14 42H50"/><path class="a" d="M12 38H52L32 14Z"/><path class="l" d="M16 38V42M26 38V42M38 38V42M48 38V42"/><circle class="w" cx="32" cy="28" r="3"/>',
+ donut:'<circle class="w" cx="26" cy="38" r="16"/><circle class="l" cx="26" cy="38" r="5"/><path class="a" d="M12 30C16 22 26 20 34 24C32 30 22 28 12 30Z"/><path class="l" d="M44 10L56 40L50 42L40 12Z"/><path class="a" d="M40 12L44 10L45 14Z"/>',
+ tiger:'<path class="l" d="M6 32Q32 8 58 32Q32 56 6 32Z"/><circle class="w" cx="32" cy="32" r="9"/><rect class="l" x="30" y="24" width="4" height="16" rx="2"/><path class="a" d="M14 10L22 20M44 10L36 20M26 6L28 18"/>',
+ openbook:'<path class="a" d="M8 18Q22 12 32 20Q42 12 56 18V50Q42 44 32 52Q22 44 8 50Z"/><path class="l" d="M32 20V52"/><path class="w" d="M42 14V34L45 31L48 34V16"/>',
+ ship:'<path class="a" d="M10 38H54L48 50H16Z"/><path class="l" d="M32 38V10"/><path class="w" d="M32 12L50 34H32Z"/><path class="l" d="M32 14L16 34H32"/><path class="l" d="M4 56Q12 50 20 56T36 56T52 56T60 56"/>',
+ feet:'<ellipse class="a" cx="20" cy="40" rx="6" ry="9"/><circle class="a" cx="14" cy="28" r="2.4"/><circle class="a" cx="19" cy="25" r="2.4"/><circle class="a" cx="24" cy="26" r="2.4"/><ellipse class="w" cx="44" cy="22" rx="6" ry="9"/><circle class="w" cx="38" cy="10" r="2.4"/><circle class="w" cx="43" cy="7" r="2.4"/><circle class="w" cx="48" cy="8" r="2.4"/>',
+ apple:'<path class="a" d="M32 56C16 56 10 40 18 28C24 20 30 24 32 26C34 24 40 20 46 28C54 40 48 56 32 56Z"/><path class="l" d="M32 26Q32 18 36 12"/><path class="w" d="M36 14C42 8 48 12 48 12C44 18 38 18 36 14Z"/>',
+ medal:'<path class="a" d="M20 6H30L34 24H24ZM44 6H34L30 24H40Z"/><circle class="w" cx="32" cy="38" r="16"/><circle class="l" cx="32" cy="38" r="10"/><path class="l" d="M32 31V45M26 38H38"/>',
+ parrot:'<path class="a" d="M22 8C38 4 50 16 46 32C44 42 36 48 26 48L20 56L22 44C14 36 12 18 22 8Z"/><path class="w" d="M46 26C54 28 56 36 50 40C48 34 46 30 46 26Z"/><circle class="l" cx="30" cy="20" r="2"/><path class="l" d="M36 24L44 26M20 56L18 60"/>',
+ lyre:'<path class="l" d="M18 8Q6 24 18 40Q24 48 32 50Q40 48 46 40Q58 24 46 8"/><path class="l" d="M24 10V46M32 10V50M40 10V46"/><rect class="a" x="14" y="50" width="36" height="8" rx="2"/>',
+ talk:'<path class="a" d="M8 10H40V32H22L12 40V32H8Z"/><path class="w" d="M26 24H58V46H54V54L44 46H26Z"/><path class="l" d="M16 18H32M16 24H26M34 34H50M34 40H44"/>',
+ cup:'<path class="a" d="M10 26H44V34Q44 50 27 50Q10 50 10 34Z"/><path class="l" d="M44 30H50Q56 30 56 36Q56 42 48 42"/><path class="w" d="M6 54H48"/><path class="l" d="M20 8Q16 14 20 18M30 8Q26 14 30 18"/>',
+ candle:'<rect class="a" x="24" y="30" width="16" height="26" rx="2"/><path class="l" d="M32 30V24"/><path class="w" d="M32 6C24 14 26 22 32 22C38 22 40 14 32 6Z"/><path class="l" d="M16 56H48"/>',
+ sunbook:'<path class="w" d="M10 38A22 22 0 0 1 54 38Z"/><path class="l" d="M32 8V14M12 16L16 20M52 16L48 20M4 30H10M54 30H60"/><path class="a" d="M8 38Q20 34 32 40Q44 34 56 38V56Q44 52 32 58Q20 52 8 56Z"/><path class="l" d="M32 40V58"/>',
+ gifts:'<rect class="a" x="8" y="34" width="26" height="20" rx="2"/><rect class="w" x="30" y="24" width="26" height="30" rx="2"/><path class="l" d="M21 34V54M43 24V54M8 44H34M30 38H56"/><path class="l" d="M43 24Q36 14 40 12Q46 12 43 24ZM43 24Q50 14 46 12Q40 12 43 24Z"/>',
+ star:'<path class="w" d="M32 6L38 24L58 24L42 36L48 54L32 43L16 54L22 36L6 24L26 24Z"/><path class="l" d="M6 60H58"/>',
+ rose:'<circle class="a" cx="32" cy="20" r="13"/><path class="l" d="M32 20Q26 16 28 12Q34 10 36 16Q38 24 30 26Q24 24 24 18"/><path class="l" d="M32 33V58"/><path class="w" d="M32 46C24 46 20 40 18 36C26 36 30 40 32 46ZM32 52C40 52 44 46 46 42C38 42 34 46 32 52Z"/>',
+ leaf:'<path class="w" d="M8 54C8 28 24 10 56 8C58 36 42 54 8 54Z"/><path class="l" d="M8 54L40 22M24 38L24 26M32 30L44 30M18 46L30 46"/>',
+ fireworks:'<path class="l" d="M32 8V22M32 30V44M10 26H24M40 26H54M16 10L24 18M48 10L40 18M16 42L24 34M48 42L40 34"/><circle class="w" cx="32" cy="26" r="4"/><rect class="a" x="8" y="48" width="48" height="8" rx="2"/>',
+ shelf:'<path class="l" d="M8 56H56M8 38H56M8 20H56"/><rect class="a" x="12" y="24" width="6" height="14"/><rect class="w" x="19" y="28" width="6" height="10"/><path class="l" d="M12 8L16 4L20 8"/>',
+ gear:'<circle class="a" cx="28" cy="34" r="14"/><circle class="l" cx="28" cy="34" r="5"/><path class="l" d="M28 14V18M28 50V54M8 34H12M44 34H48M14 20L17 23M42 48L39 45M14 48L17 45M42 20L39 23"/><path class="w" d="M50 8L53 14L60 15L55 20L56 27L50 24L44 27L45 20L40 15L47 14Z"/>',
+ hill:'<path class="a" d="M4 56Q32 6 60 56Z"/><circle class="w" cx="32" cy="42" r="10"/><path class="l" d="M32 32V52M22 42H42"/><path class="l" d="M4 56H60"/>',
+ dots:'<rect class="a" x="10" y="8" width="44" height="48" rx="6"/><circle class="w" cx="24" cy="20" r="5"/><circle class="w" cx="24" cy="32" r="5"/><circle class="l" cx="24" cy="44" r="5"/><circle class="l" cx="40" cy="20" r="5"/><circle class="w" cx="40" cy="32" r="5"/><circle class="l" cx="40" cy="44" r="5"/>',
+ maze:'<rect class="l" x="8" y="8" width="48" height="48"/><path class="l" d="M8 20H44V44H20V32H32M56 28H50V50H14V14H32V26"/><circle class="w" cx="32" cy="32" r="3"/>',
+ window:'<rect class="a" x="12" y="6" width="40" height="52" rx="3"/><path class="l" d="M32 6V58M12 32H52"/><rect class="l" x="20" y="38" width="6" height="14"/><path class="w" d="M23 28C19 32 20 35 23 35C26 35 27 32 23 28Z"/><path class="w" d="M41 28C37 32 38 35 41 35C44 35 45 32 41 28Z"/>',
+ tortoise:'<path class="a" d="M8 44Q8 20 32 20Q56 20 56 44Z"/><path class="l" d="M20 44L24 28M32 44V24M44 44L40 28M10 36H54"/><path class="w" d="M56 38Q64 36 62 44Q58 46 56 44Z"/><path class="l" d="M16 44V52M28 44V52M42 44V52M52 44V52"/>',
+ planet:'<circle class="w" cx="32" cy="32" r="14"/><path class="a" d="M4 40C4 30 20 22 40 24C56 26 62 32 58 38C54 28 36 26 20 30C10 33 6 38 4 40Z"/><path class="l" d="M4 40C4 52 22 46 40 44C56 40 62 34 58 38"/><circle class="l" cx="12" cy="10" r="1.4"/><circle class="l" cx="54" cy="12" r="1.4"/>',
+ cafe:'<ellipse class="a" cx="32" cy="22" rx="22" ry="6"/><path class="l" d="M32 28V54M20 56H44"/><path class="w" d="M22 6H38V14Q38 20 30 20Q22 20 22 14Z"/><rect class="l" x="40" y="8" width="12" height="10" rx="1"/><path class="l" d="M42 12H50"/>'
+};
+/* [svg, line]. Dates without an entry get a plain greeting. */
+const DOODLES={
+'2026-11-11':['dosto','Dostoevsky was born today in 1821. Good evening for a long book.'],
+'2026-11-14':['cottage','Astrid Lindgren was born today in 1907. Her heroes tended to be small, brave and badly supervised.'],
+'2026-11-16':['drum','Chinua Achebe was born today in 1930. Things Fall Apart is shorter than you remember.'],
+'2026-11-19':['hat','Lincoln spoke for about two minutes today in 1863. Take note.'],
+'2026-11-21':['quill','Voltaire was born today in 1694. Cultivate your garden, or at least your shelf.'],
+'2026-11-22':['specs','George Eliot was born today in 1819. Middlemarch is waiting, with patience.'],
+'2026-11-23':['peach','Roald Dahl died today in 1990. His books are still out on loan.'],
+'2026-11-24':['key','Frances Hodgson Burnett was born today in 1849. Someone left a key in the garden.'],
+'2026-11-25':['steps','Andrew Carnegie was born today in 1835 and paid for a great many libraries. Use one.'],
+'2026-11-26':['donut','Charles Schulz was born today in 1922. He began each working day with a jam doughnut. Sound method.'],
+'2026-11-28':['tiger','William Blake was born today in 1757. He illustrated his own poems. Show off.'],
+'2026-11-29':['openbook','C. S. Lewis was born today in 1898. He thought a good book deserves a second reading. Permission granted.'],
+'2026-11-30':['ship','Jonathan Swift was born today in 1667. Gulliver travelled far for a better view. You only need the sofa.'],
+'2026-12-03':['feet','Agatha Christie vanished today in 1926 and was found safe eleven days later. She never explained.'],
+'2026-12-09':['apple','John Milton was born today in 1608. Paradise Lost is long, but so is winter.'],
+'2026-12-10':['medal','Nobel Prizes are presented today. Your library card has no such ceremony.'],
+'2026-12-12':['parrot','Gustave Flaubert was born today in 1821. He spent days on single sentences. Take your time.'],
+'2026-12-13':['lyre','Heinrich Heine was born today in 1797. Read by the river, or beside the radiator.'],
+'2026-12-15':['talk','L. L. Zamenhof was born today in 1859 and invented Esperanto. Fewer translations needed.'],
+'2026-12-16':['cup','Jane Austen was born today in 1775. Tea first, then the sharp remark.'],
+'2026-12-19':['candle','A Christmas Carol was published today in 1843. Only three ghosts.'],
+'2026-12-21':['sunbook','Shortest day of the year, with the solstice at 8.50pm tonight. Longest evening for reading.'],
+'2026-12-24':['gifts','Christmas Eve. Wrap the books, then reread one.'],
+'2026-12-25':['star','Happy Christmas. No reading target today.'],
+'2026-12-29':['rose','Rainer Maria Rilke died today in 1926. Letters to a Young Poet is short.'],
+'2026-12-30':['leaf','Rudyard Kipling was born today in 1865. The Jungle Book is shorter than your pile.'],
+'2026-12-31':['fireworks','Last day of the year. Your goal total is what it is.'],
+'2027-01-01':['shelf','New year, empty shelf. Fill it slowly.'],
+'2027-01-02':['gear','Isaac Asimov celebrated his birthday today. The exact date is uncertain, but the 500 books are not.'],
+'2027-01-03':['hill','J. R. R. Tolkien was born today in 1892. A second breakfast is acceptable.'],
+'2027-01-04':['dots','Louis Braille was born today in 1809. Six dots, a whole library.'],
+'2027-01-05':['maze','Umberto Eco was born today in 1932. He kept an enormous library. Do not feel judged.'],
+'2027-01-06':['window','Nollaig na mBan. Put the book down only to put the kettle on.'],
+'2027-01-07':['tortoise','Gerald Durrell was born today in 1925. My Family and Other Animals is the best defence of a messy house.'],
+'2027-01-08':['planet','Stephen Hawking was born today in 1942, exactly three hundred years after Galileo died.'],
+'2027-01-09':['cafe','Simone de Beauvoir was born today in 1908. That is the last doodle of this batch. More arrive with the next update.']
+};
+const QUIET=['Book and cuppa.','Coffee time. Get your book.','Get cosy with your favourite author.','Good day. Your shelf is where you left it.','Welcome back.','Nothing special today. Read anyway.','Good to see you.','A quiet day for a chapter.','The kettle is probably on.','Ten pages counts.','Your bookmark has been waiting.','Sit down. The washing can wait.','One more chapter, as usual.','Phone down, book up.','Pick a spot by the window.','Slow reading is still reading.','Somewhere a character is waiting for you.','Biscuit optional, book essential.','The unread pile says hello.','Tea, toast, chapter.','Settle in.','No rush. The book will wait.','Back to the story.','Good evening for it, whatever the hour.'];
+const QSV=['book','candle','cup','shelf','openbook'];
+function doodleFor(ds){
+  const e=DOODLES[ds];if(e)return{svg:e[0],line:e[1],special:true};
+  const n=Math.round((new Date(ds+'T00:00:00')-new Date('2026-01-01T00:00:00'))/864e5);
+  const i=((n*5)%QUIET.length+QUIET.length)%QUIET.length;
+  return{svg:QSV[i%QSV.length],line:QUIET[i],special:false};
+}
+function doodleCard(){
+  const ds=today(),f=db.flags||(db.flags={});
+  if(ui.ddHide)return'';
+  if(f.dd!==ds&&!ui.ddShow){ui.ddShow=ds;f.dd=ds;persistLocal();scheduleSync()}
+  if(ui.ddShow!==ds)return'';
+  const d=doodleFor(ds);
+  return`<div class="ddcard${d.special?' sp':''}">${DSV(d.svg)}<p>${esc(d.line)}</p><button class="ddx" data-act="ddhide" aria-label="Hide">×</button></div>`;
+}
 
 /* ---------- Wiring ---------- */
 function render(){
@@ -1828,6 +2012,7 @@ document.addEventListener('click',async e=>{
     case'persist':try{const ok=await navigator.storage.persist();toast(ok?'Browser will keep your data.':'Browser declined. Keep backups.')}catch(x){toast('Not supported here.')}break;
     case'chpw':changePw();break;
     case'undated':ui.status='undated';ui.tab='library';render();toast('Showing finished books with no finish date. Tap All to clear.');break;
+    case'ddhide':ui.ddHide=true;render();break;
     case'hhcreate':hhAct('create');break;
     case'hhinvite':hhAct('invite',($('#hhEmail')||{}).value);break;
     case'hhuninv':hhAct('uninvite',d.e);break;
