@@ -613,6 +613,7 @@ label.note:has(#hhShow){text-align:left;justify-content:flex-start}
 .tgroup .themes{margin-top:6px}
 nav.tabs button[hidden]{display:none}
 .bell{z-index:8}
+.tcell .tdt{display:block;opacity:.65;font-size:11px}
 </style>
 </head>
 <body>
@@ -1355,7 +1356,7 @@ const tLabel=x=>x.lvl?(x.t.t.length>1?MET[metalIdx(x.t,x.lvl)]:'Earned'):(x.t.t.
 function tcell(x,fresh){
   const t=x.t,multi=t.t.length>1,next=t.t[x.lvl];
   const pct=next&&(multi||t.t[0]>1)?Math.min(100,Math.round(x.val/next*100)):0;
-  return `<button class="tcell${x.lvl?'':' lk'}${fresh?' new':''}" data-trophy="${t.id}">${trophySVG(t,x.lvl,{w:52})}<b>${esc(t.n)}</b><small>${tLabel(x)}</small>${multi&&x.lvl?`<span class="pips">${t.t.map((_,i)=>`<i class="${i<x.lvl?'on':''}"></i>`).join('')}</span>`:''}${!x.lvl&&pct>0?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}</button>`;
+  return `<button class="tcell${x.lvl?'':' lk'}${fresh?' new':''}" data-trophy="${t.id}">${trophySVG(t,x.lvl,{w:52})}<b>${esc(t.n)}</b><small>${tLabel(x)}</small>${x.lvl&&x.when[x.lvl-1]?`<small class="tdt">${fmtDate(x.when[x.lvl-1])}</small>`:''}${multi&&x.lvl?`<span class="pips">${t.t.map((_,i)=>`<i class="${i<x.lvl?'on':''}"></i>`).join('')}</span>`:''}${!x.lvl&&pct>0?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}</button>`;
 }
 function seenMap(){db.flags.seen=db.flags.seen||{};return db.flags.seen}
 function unseenIds(lvl){const s=seenMap();return Object.keys(lvl).filter(id=>lvl[id]>(s[id]||0))}
@@ -2043,10 +2044,10 @@ function favFill(){
   el.innerHTML=l.length?l.map(b=>`<button class="favres" data-act="favadd" data-id="${esc(b.id)}">${miniBook(favSmall(b))}<span class="ft"><b>${esc(b.title)}</b><small>${esc(b.author)}</small></span><span class="note">Add</span></button>`).join(''):'<p class="note">No book matches that.</p>';
 }
 function titleLists(){
-  const S=trophyState(),m=mine(S),names=RANKS[theme]||RANKS.nook,nxt=RK[m.cur+1];
-  const rrows=names.map((nm,i)=>{const open=i<=m.cur;return`<button class="trow${i===m.r?' on':''}"${open?` data-rank="${i}"`:' disabled'}><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':open?RK[i]+' trophies':(RK[i]-m.n)+' to go'}</span></button>`}).join('');
+  const S=trophyState(),m=mine(S),names=RANKS[theme]||RANKS.nook;
+  const rrows=names.map((nm,i)=>i>m.cur?'':`<button class="trow${i===m.r?' on':''}" data-rank="${i}"><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':RK[i]+' trophies'}</span></button>`).join('');
   const frows=`<button class="trow${m.flair?'':' on'}" data-flair=""><span>No flair</span><span class="note">${m.flair?'':'Equipped'}</span></button>`+m.fe.map(f=>`<button class="trow${f.n===m.flair?' on':''}" data-flair="${f.k}"><span>${esc(f.n)}</span><span class="note">${f.n===m.flair?'Equipped':f.ok(S)?esc(f.sub||(TBY[f.id]?TBY[f.id].n:'')):'Gifted'}</span></button>`).join('');
-  return`<div class="sec"><h3>Rank</h3><p class="note">${m.n} trophies${nxt?` · next rank at ${nxt}`:' · top rank reached'}. Your rank moves up by itself as you earn trophies. You can switch to any rank you have already reached.</p><div class="tlist">${rrows}</div></div>
+  return`<div class="sec"><h3>Rank</h3><p class="note">${m.n} trophies. Your rank moves up by itself as you earn trophies, and you can switch to any rank you have reached. Ranks still to come, and how far away they are, are on the Trophies tab.</p><div class="tlist">${rrows}</div></div>
   <div class="sec"><h3>Flair</h3><p class="note">${m.fe.length?'Earned from specific trophies, or given to you. Pick one to show next to your rank.':'Flair titles are earned from specific trophies. Your first one will appear here.'}</p><div class="tlist">${frows}</div></div>`;
 }
 function cardBox(){
