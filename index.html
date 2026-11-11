@@ -512,6 +512,9 @@ html[data-theme=scifi] .tchip{border-radius:4px;text-transform:uppercase;letter-
 .bell[hidden]{display:none}
 .hhinv{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid var(--line,#e6dcc6);border-radius:999px;font-size:12px;margin:2px 2px 0 0}
 .hhinv button{border:0;background:none;color:inherit;font-size:12px;cursor:pointer;padding:0}
+.mcards{display:grid;gap:8px;margin:6px 0 10px}
+.mcard{display:flex;flex-direction:column;gap:2px;padding:10px 12px 10px 18px;border:2px solid;border-radius:12px;font-size:13px}
+.mcard b{font-size:15px}.mcard span{opacity:.85}
 </style>
 </head>
 <body>
@@ -640,7 +643,7 @@ function renderStats(){
   <div class="sec"><h3>By format</h3>${hb(tally(b=>[b.format]))}</div>
   <div class="sec"><h3>Top tags</h3>${hb(tally(b=>b.genres))}</div>
   ${longest&&longest.b.pages?`<div class="sec"><h3>Longest read</h3>${esc(longest.b.title)} <span class="note">${longest.b.pages} pages</span></div>`:''}
-  <div class="sec"><h3>All years</h3>${hb(years.map(v=>[v,entries.filter(e=>e.r.end.slice(0,4)===v).length]))}${undated?`<div class="note">${undated} finished book${undated>1?'s have':' has'} no finish date, so they are not counted by year. <button class="btn" data-act="undated">Show them</button></div>`:''}</div>`;
+  <div class="sec"><h3>All years</h3>${hb(years.map(v=>[v,entries.filter(e=>e.r.end.slice(0,4)===v).length]))}${undated?`<div class="note">${undated} finished book${undated>1?'s have':' has'} no finish date, so they do not count towards stats, goals or trophies. <button class="btn" data-act="undated">Show them</button></div>`:''}</div>`;
 }
 
 /* ---------- Settings ---------- */
@@ -922,7 +925,7 @@ Object.assign(GL,{"r_babel":"<path d=\"M3 9c3-5 6-5 9 0s6 5 9 0\"/><path d=\"M3 
 const MET=['Bronze','Silver','Gold','Platinum','Diamond'];
 const MDOT=['#c98a58','#c9cfd6','#ebbc4f','#9dd7ea','#c3b3f8'];
 const MAPM={1:[2],2:[0,2],3:[0,1,2],4:[0,1,2,3],5:[0,1,2,3,4]};
-let dbVer=0;
+let dbVer=0,STRICT=true;
 const fmtN=n=>Number(n).toLocaleString('en-IE');
 const dn=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);
 const addDays=(iso,n)=>{const x=new Date(iso+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)};
@@ -956,7 +959,7 @@ function mkCtx(asof){
     if(asof){rs=[];for(const r of b.reads){if(r.end){if(r.end<=asof)rs.push(r);else if(r.start&&r.start<=asof)rs.push({start:r.start,end:''})}else if(!r.start||r.start<=asof)rs.push(r)}}
     const hasEnd=rs.some(r=>r.end);let st=b.status;
     if(asof&&!hasEnd){if(b.status==='finished'&&!b.reads.some(r=>r.end))st='finished';else if(b.status==='finished'||b.status==='reading')st=rs.some(r=>r.start)?'reading':'want'}
-    V.push({b,rs,st,fin:hasEnd||st==='finished'});
+    V.push({b,rs,st,fin:hasEnd||(!STRICT&&st==='finished')});
   }
   const F=V.filter(v=>v.fin),E=[],R=[];
   F.forEach(v=>{const ends=v.rs.filter(r=>r.end);if(ends.length)ends.forEach(r=>E.push({b:v.b,s:r.start||'',e:r.end}));else E.push({b:v.b,s:'',e:''})});
@@ -1141,7 +1144,7 @@ function levelsNow(){
 }
 function candDates(){
   const s=new Set();myBooks().forEach(b=>{if(b.rep)return;s.add(b.added);b.reads.forEach(r=>{s.add(r.start);s.add(r.end)})});
-  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl')s.add(f[k])});
+  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl'&&k!=='tbest'&&k!=='card')s.add(f[k])});
   let a=[...s].filter(x=>/^\d{4}-\d\d-\d\d$/.test(x)).sort();
   if(a.length>240){const k=Math.ceil(a.length/240),b=[];for(let i=k-1;i<a.length;i+=k)b.push(a[i]);if(b[b.length-1]!==a[a.length-1])b.push(a[a.length-1]);a=b}
   return a;
@@ -1159,6 +1162,7 @@ function trophyState(){
     }
     items.push({t,lvl,val:now.val[t.id],when});
   });
+  {const tb=(db.flags&&db.flags.tbest)||{};items.forEach(x=>{const f=tb[x.t.id]|0;if(f>x.lvl)x.lvl=f})}
   const meta=items.find(x=>x.t.id==='meta'),firsts=items.filter(x=>x.t.id!=='meta'&&x.lvl>0).map(x=>x.when[0]||today()).sort();
   for(let L=1;L<=meta.lvl;L++)meta.when.push(firsts[meta.t.t[L-1]-1]||'');
   const c=now.c,seasons=[];
@@ -1371,7 +1375,7 @@ const KW={
  toys:['children','kids','picture book','bedtime','nursery'],
  crystal:['video game','videogame','game tie in','gaming','bioshock','mass effect','dragon age','final fantasy','witcher','halo','zelda','skyrim','elder scrolls','fallout','warcraft','starcraft','diablo','assassin’s creed','assassins creed','resident evil','metal gear','kingdom hearts','dark souls','pokemon','uncharted','god of war']
 };
-const isFin=b=>b.status==='finished'||(b.reads||[]).some(r=>r.end);
+const isFin=b=>(b.reads||[]).some(r=>r.end)||(!STRICT&&b.status==='finished');
 const kwHit=(b,id)=>{const t=(b.genres||[]).join(' ').toLowerCase(),f=(b.format||'').toLowerCase();return KW[id].some(k=>t.includes(k))||(id==='comic'&&/comic|manga|graphic/.test(f))};
 const gCount=id=>myBooks().filter(b=>!b.rep&&isFin(b)&&kwHit(b,id)).length;
 const nTro=()=>{try{return earnedN(trophyState())}catch(e){return 0}};
@@ -1380,7 +1384,7 @@ const verified=()=>!!(st.user&&st.user.emailVerified);
 const RULES={
  nook:{need:'',ok:()=>true},
  cat:{need:'Add 5 books',ok:()=>myBooks().length>=5},
- meadow:{need:'Finish your first book',ok:()=>myBooks().some(b=>!b.rep&&isFin(b))},
+ meadow:{need:'Finish your first book, with a finish date',ok:()=>myBooks().some(b=>!b.rep&&isFin(b))},
  comic:{need:'Finish 2 comics, manga or graphic novels',ok:()=>gCount('comic')>=2},
  scifi:{need:'Finish 2 books tagged sci fi',ok:()=>gCount('scifi')>=2},
  fantasy:{need:'Finish 2 books tagged fantasy',ok:()=>gCount('fantasy')>=2},
@@ -1416,7 +1420,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -1447,7 +1451,8 @@ function rankBar(S){
   return`<div class="rbar"><i style="width:${pc}%"></i></div><p class="note">${left} more ${left===1?'trophy':'trophies'} to reach ${esc(names[cur+1])}.</p>`;
 }
 function titleTick(){
-  const S=TCACHE;if(!S||S.ver!==dbVer)return;
+  let S=TCACHE;if(!S||S.ver!==dbVer)return;
+  if(!db.flags.tbest){STRICT=false;TCACHE=null;const L=trophyState(),tb={};L.items.forEach(x=>{if(x.lvl>0)tb[x.t.id]=x.lvl});db.flags.tbest=tb;STRICT=true;TCACHE=null;persistLocal();scheduleSync();S=trophyState()}
   const t=ttl(),n=earnedN(S),cur=rankIdx(n),fe=flairOf(S).map(x=>x.k);let ch=false,msg='';
   themeCheck();
   if(t.top==null){t.top=cur;t.rank=cur;t.at=0;t.flair=t.flair||'';t.fl=fe;ch=true}
@@ -1456,6 +1461,7 @@ function titleTick(){
     const nf=fe.filter(k=>!(t.fl||[]).includes(k));
     if(nf.length){t.fl=(t.fl||[]).concat(nf);ch=true;nf.forEach(k=>{const f0=FLAIR.find(f=>f.k===k);if(f0)notify('flair:'+k,'New title unlocked: '+f0.n,'🏅')});if(!msg)msg='New title unlocked: '+FLAIR.find(f=>f.k===nf[0]).n+(nf.length>1?` (+${nf.length-1} more)`:'')}
   }
+  {const tb=db.flags.tbest||(db.flags.tbest={});S.items.forEach(x=>{if(x.lvl>(tb[x.t.id]|0)){tb[x.t.id]=x.lvl;ch=true}})}
   if(ch){persistLocal();scheduleSync()}
   if(msg)setTimeout(()=>toast(msg),900);
 }
@@ -1499,11 +1505,11 @@ function mergeFlags(a,b){
   new Set([...Object.keys(a),...Object.keys(b)]).forEach(k=>{
     let v;
     if(k==='notes'){const x=a[k]||{},y=b[k]||{};v={};new Set([...Object.keys(x),...Object.keys(y)]).forEach(i=>{const p=x[i],q=y[i];v[i]=!p?q:!q?p:{m:p.m,i:p.i,at:Math.min(p.at||q.at||0,q.at||p.at||0),r:(p.r||q.r)?1:0,x:(p.x||q.x)?1:0}})}
-    else if(k==='themes'||k==='seen'||k==='unl'){
+    else if(k==='themes'||k==='seen'||k==='unl'||k==='tbest'){
       const x=a[k]||{},y=b[k]||{};v={};
-      new Set([...Object.keys(x),...Object.keys(y)]).forEach(i=>{v[i]=k==='seen'?Math.max(+x[i]||0,+y[i]||0):(!x[i]?y[i]:!y[i]?x[i]:(x[i]<y[i]?x[i]:y[i]))});
+      new Set([...Object.keys(x),...Object.keys(y)]).forEach(i=>{v[i]=(k==='seen'||k==='tbest')?Math.max(+x[i]||0,+y[i]||0):(!x[i]?y[i]:!y[i]?x[i]:(x[i]<y[i]?x[i]:y[i]))});
     }else if(k==='title')v=mergeTitle(a[k],b[k]);
-    else if(k==='nick'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
+    else if(k==='nick'||k==='card'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
     else{const x=a[k],y=b[k];v=!x?y:!y?x:(x<y?x:y)}
     if(v!==undefined)o[k]=v;
   });
@@ -1636,6 +1642,13 @@ const myBooks=()=>db.books.filter(b=>b.pr!==false);
 const HSH=['title','author','isbn','pages','cover','series','seriesNo','format','genres','edition','rel'];
 const hsig=b=>JSON.stringify(HSH.map(k=>b[k]));
 const psig=b=>JSON.stringify([b.status,b.rating,b.review,b.notes,b.reads,b.progress,b.rep]);
+const cardCfg=()=>db.flags.card||{};
+const cardTheme=()=>{const c=cardCfg().c;return c&&THEMES[c]?c:theme};
+const cardOn=()=>cardCfg().on!==0;
+function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};if(cardOn()){const m=mine(trophyState());c.r=m.rank;c.f=m.flair||'';c.t=m.n}return c}
+const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''));
+function cardHTML(c,you){const T=THEMES[c.k]||THEMES.nook,d=T.dots,h=d[2].replace('#',''),L=h.length===6?(0.299*parseInt(h.slice(0,2),16)+0.587*parseInt(h.slice(2,4),16)+0.114*parseInt(h.slice(4,6),16)):255,tx=L>140?'#2b2118':'#f5efe6';
+  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}</div>`}
 let HH=null,hhBusy=false,hhInv=[],hhMsg='';
 function hhTouch(b){
   const S=db.sync;if(!S.hid)return;S.hdirty=S.hdirty||{};
@@ -1662,6 +1675,7 @@ async function hhSync(F,fs){
   const S=db.sync;S.hdirty=S.hdirty||{};S.htomb=S.htomb||{};
   await hhFind(F,fs);
   if(!S.hid)return false;
+  try{const c=myCard(),cur=HH&&HH.profiles&&HH.profiles[st.user.uid];if(!sameCard(cur,c)){await F.updateDoc(F.doc(fs,'households',S.hid),{['profiles.'+st.user.uid]:c});if(HH){HH.profiles=HH.profiles||{};HH.profiles[st.user.uid]=c}}}catch(e){console.warn(e)}
   const col=F.collection(fs,'households',S.hid,'books');let changed=false,maxS=S.hlast||0;
   const snap=await F.getDocs(F.query(col,F.where('synced','>',F.Timestamp.fromMillis(S.hlast||0))));
   snap.forEach(dc=>{
@@ -1704,13 +1718,18 @@ async function hhAct(kind,arg){
   try{
     if(kind==='create'){
       const ref=F.doc(F.collection(fs,'households'));
-      await F.setDoc(ref,{members:[u.uid],invited:[],names:{[u.uid]:hhName()},created:Date.now()});
+      let nm=prompt('Name your household','Our library');nm=(nm||'').trim().slice(0,40)||'Our library';
+      let card={n:hhName(),k:cardTheme()};try{card=myCard()}catch(e){}
+      await F.setDoc(ref,{name:nm,members:[u.uid],invited:[],names:{[u.uid]:hhName()},profiles:{[u.uid]:card},created:Date.now()});
       S.hid=ref.id;S.hlast=0;
       if(myBooks().length&&confirm('Add the '+myBooks().length+' books on this shelf to the shared library? Choose Cancel to keep them private.'))hhShareAll();else db.books.forEach(b=>b.np=1);
       toast('Household started.');
     }else if(kind==='invite'){
       const e=(arg||'').trim().toLowerCase();if(!/^\S+@\S+\.\S+$/.test(e)){toast('That email address does not look right.');hhBusy=false;return}
       await F.updateDoc(F.doc(fs,'households',S.hid),{invited:F.arrayUnion(e)});toast('Invitation saved. They join from Settings after signing in.');
+    }else if(kind==='rename'){
+      let nm=prompt('Household name',(HH&&HH.name)||'');nm=(nm||'').trim().slice(0,40);if(!nm){hhBusy=false;return}
+      await F.updateDoc(F.doc(fs,'households',S.hid),{name:nm});
     }else if(kind==='uninvite'){
       await F.updateDoc(F.doc(fs,'households',S.hid),{invited:F.arrayRemove(arg)});
     }else if(kind==='join'){
@@ -1734,20 +1753,32 @@ async function hhAct(kind,arg){
 function householdBox(){
   const S=db.sync;if(!st.user||st.configured===false)return'';
   if(!st.user.emailVerified)return`<div class="sec"><h3>Household</h3><p class="note">Verify your email address to share a library with friends or family.</p></div>`;
-  let b;
+  let b,title='Household';
   if(S.hid&&HH){
-    const names=HH.names||{},mem=HH.members.map(m=>esc(names[m]||'Member')+(m===st.user.uid?' (you)':'')).join(', ');
+    title='Household: '+esc(HH.name||'Our library');
+    const pf=HH.profiles||{},names=HH.names||{};
+    const cards=HH.members.map(m=>m===st.user.uid?cardHTML(myCard(),1):cardHTML(Object.assign({n:names[m]},pf[m]||{}),0)).join('');
     const inv=(HH.invited||[]).map(e=>`<span class="hhinv">${esc(e)} <button class="x" data-act="hhuninv" data-e="${esc(e)}" aria-label="Cancel invitation">✕</button></span>`).join(' ');
-    b=`<p class="note">Sharing one library with: ${mem}.<br>Titles, authors, covers, tags and formats are shared. Status, dates, ratings, notes, trophies and stats stay your own. A shared book only counts for you once you have added your own status, dates or rating.</p>
-    ${inv?`<p class="note">Waiting to join: ${inv}</p>`:''}
-    <div class="f"><input id="hhEmail" type="email" placeholder="Email address to invite"></div>
-    <div class="setrow"><button class="btn p" data-act="hhinvite">Invite</button><button class="btn" data-act="hhleave">Leave household</button></div>`;
+    const opts=Object.keys(THEMES).filter(id=>!themeLock(id)).map(id=>`<option value="${id}"${id===cardTheme()?' selected':''}>${esc(THEMES[id].name)}</option>`).join('');
+    b=`<div class="mcards">${cards}</div>
+    <p class="note">Titles, authors, covers, tags, formats, editions and release dates are shared. Status, dates, ratings, notes, copies, purchase dates, trophies and stats stay your own. A shared book only counts for you once you have added your own status, dates or rating.</p>
+    <h3 style="margin-top:14px">Your card</h3>
+    <div class="f"><label>Card colours</label><select id="hhColour">${opts}</select></div>
+    <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hhShow"${cardOn()?' checked':''}> Show my rank, title and trophies to my household</label>
+    ${inv?`<p class="note" style="margin-top:10px">Waiting to join: ${inv}</p>`:''}
+    <div class="f" style="margin-top:10px"><input id="hhEmail" type="email" placeholder="Email address to invite"></div>
+    <div class="setrow"><button class="btn p" data-act="hhinvite">Invite</button><button class="btn" data-act="hhrename">Rename</button><button class="btn" data-act="hhleave">Leave household</button></div>`;
   }else if(hhInv.length){
-    b=`<p class="note">You have been invited to share a library.</p>`+hhInv.map(h=>`<div class="setrow"><button class="btn p" data-act="hhjoin" data-id="${h.id}">Join ${esc(Object.values(h.names||{})[0]||'household')}</button></div>`).join('');
+    b=`<p class="note">You have been invited to share a library.</p>`+hhInv.map(h=>`<div class="setrow"><button class="btn p" data-act="hhjoin" data-id="${h.id}">Join ${esc(h.name||'a household')} (${(h.members||[]).length} ${(h.members||[]).length===1?'member':'members'})</button></div>`).join('');
   }else b=`<p class="note">Share one library with your partner, family or friends. Anyone can add books and scan them in. Each person keeps their own reading dates, ratings, trophies and stats. You can only be in one household.</p>
     <div class="setrow"><button class="btn p" data-act="hhcreate">Start a household</button></div>`;
-  return`<div class="sec"><h3>Household</h3>${b}</div>`;
+  return`<div class="sec"><h3>${title}</h3>${b}</div>`;
 }
+document.addEventListener('change',e=>{
+  const t=e.target;if(!t||(t.id!=='hhColour'&&t.id!=='hhShow'))return;
+  const c=cardCfg();db.flags.card={c:t.id==='hhColour'?t.value:(c.c||cardTheme()),on:t.id==='hhShow'?(t.checked?1:0):(c.on===0?0:1),at:Date.now()};
+  persistLocal();scheduleSync();sync(true);
+});
 
 /* ---------- Wiring ---------- */
 function render(){
@@ -1802,6 +1833,7 @@ document.addEventListener('click',async e=>{
     case'hhuninv':hhAct('uninvite',d.e);break;
     case'hhjoin':hhAct('join',d.id);break;
     case'hhleave':hhAct('leave');break;
+    case'hhrename':hhAct('rename');break;
     case'bell':openBell();break;
     case'nclear':NOTES=[];notesSave();openBell();break;
     case'reptoggle':d.rep=!d.rep;drawForm();break;
