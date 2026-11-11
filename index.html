@@ -750,6 +750,30 @@ label.note:has(#hhShow){text-align:left;justify-content:flex-start}
 nav.tabs button[hidden]{display:none}
 .bell{z-index:8}
 .tcell .tdt{display:block;opacity:.65;font-size:11px}
+
+/* ===== Wide screens: tablet and laptop (phones are untouched) ===== */
+@media (min-width:760px){
+  main{max-width:920px;padding-left:24px;padding-right:24px}
+  header.top{padding-left:max(24px,calc((100% - 920px)/2 + 24px));padding-right:max(24px,calc((100% - 920px)/2 + 24px))}
+  html[data-theme] body::before{opacity:.5}
+  html[data-theme] main{background:color-mix(in srgb,var(--card) 38%,transparent);border-radius:22px;margin-top:14px;margin-bottom:24px;padding-top:16px;box-shadow:0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent)}
+  #lst{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+  .tgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  html[data-tab=profile] main{column-count:2;column-gap:16px}
+  html[data-tab=profile] main>*{break-inside:avoid;min-width:0}
+}
+@media (min-width:1100px){
+  body{padding-left:92px}
+  main{max-width:1120px}
+  header.top{padding-left:max(24px,calc((100% - 1120px)/2 + 24px));padding-right:max(24px,calc((100% - 1120px)/2 + 24px))}
+  html[data-theme] body::before{opacity:.38}
+  #lst{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tgrid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  main{padding-bottom:60px}
+  html[data-theme] nav.tabs,nav.tabs{right:auto;top:0;bottom:0;width:92px;flex-direction:column;justify-content:flex-start;gap:6px;padding:18px 0 0;border:0!important;border-right:1px solid var(--line)!important;border-radius:0!important;box-shadow:none!important}
+  nav.tabs button{flex:0 0 auto;padding:12px 4px}
+  nav.tabs button.on{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:12px;margin:0 8px}
+}
 </style>
 </head>
 <body>
@@ -2303,6 +2327,7 @@ document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.cla
 /* ---------- Wiring ---------- */
 function render(){
   if(ui.tab==='household'&&!db.sync.hid)ui.tab='profile';
+  document.documentElement.dataset.tab=ui.tab;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===ui.tab));
   $('#ttl').textContent={library:T().title,stats:T().stats,trophies:T().troph||'Trophies',profile:'Profile',household:'Household',settings:'Settings'}[ui.tab];
   document.querySelectorAll('nav.tabs .e').forEach((e,i)=>{const nv=T().nav.slice();nv.splice(3,0,'👤','🏠');e.textContent=nv[i]});{const hb=document.querySelector('nav.tabs button[data-tab=household]');if(hb)hb.hidden=!db.sync.hid}
