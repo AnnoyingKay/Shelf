@@ -11,7 +11,7 @@ Keeps a library of books with status (want to read, reading, finished), reading 
 Adds books by scanning the barcode, searching online (Open Library) or typing them in.
 Records format, pages, series, tags, edition, physical release date, copies owned and date of purchase.
 Marks books "On repeat" for children's books or favourites read again and again. These are kept out of goals, stats and trophies.
-Shows yearly and monthly stats, a reading goal, and a list of finished books that have no finish date.
+Shows yearly and monthly stats, a reading goal, and a list of finished books that have no finish date. A finished book needs a finish date to count towards stats, goals and trophies. Trophies already earned are kept.
 Awards trophies and ranks, with a bell for notices.
 Offers themes. Some are open from the start and the rest unlock as you read, depending on what you read. Hallowe'en and Yule stay unlocked once earned.
 Imports from Goodreads CSV and exports a CSV or a JSON backup.
@@ -32,6 +32,7 @@ Status, dates, ratings, reviews, notes, copies, purchase dates, trophies, stats 
 A shared book counts towards your trophies, stats and theme unlocks only once you add your own status, dates or rating. Joining an existing library does not unlock a pile of trophies.
 Deleting a shared book removes it for everyone, after a confirmation.
 Leaving keeps the books you have used as private books and removes the shared ones you never touched.
+Each household has a name. Members see each other's cards: nickname, rank, title, trophy count and a card colour taken from the themes. Each person can pick their colours or hide everything except their nickname.
 Adding a book that is already in the library asks whether it is a repeat entry or should be cancelled.
 Files
 File	Purpose
