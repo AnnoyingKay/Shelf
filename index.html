@@ -575,6 +575,11 @@ html[data-theme=scifi] .tchip{border-radius:4px;text-transform:uppercase;letter-
 .dsv .a{fill:var(--accent);stroke:currentColor;stroke-width:2;stroke-linejoin:round;opacity:.9}
 .dsv .w{fill:var(--warm);stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .nh{margin:12px 0 4px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mute)}
+.ntabs{display:flex;gap:8px;margin:8px 0 4px;justify-content:center}
+.ntab{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 16px;font:inherit;font-size:14px;cursor:pointer}
+.ntab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.nb{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:var(--danger);color:#fff;font-size:11px;font-style:normal;line-height:18px;text-align:center}
+.ntab.on .nb{background:var(--accent-ink);color:var(--accent)}
 </style>
 </head>
 <body>
@@ -1516,13 +1521,16 @@ const isNews=k=>/^(chg|wel):/.test(k);
 const niOf=k=>NI[k.split(':')[0]]||'🔔';
 function openBell(){
   const all=Object.entries(NT()).filter(([k,n])=>!n.x).sort((a,b)=>b[1].at-a[1].at);
-  const row=([k,n])=>`<div class="nrow${n.r?'':' new'}"><span class="ni">${niOf(k)}</span><div><div>${esc(n.m)}</div><small class="note">${new Date(n.at).toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</small></div></div>`;
   const act=all.filter(([k])=>!isNews(k)).slice(0,30),nws=all.filter(([k])=>isNews(k)).slice(0,20);
-  const part=(h,l)=>l.length?`<h4 class="nh">${h}</h4>${l.map(row).join('')}`:'';
-  const rows=(act.length||nws.length)?part('Activity',act)+part('News',nws):'<p class="note">Nothing yet. Trophies, ranks, themes and update notes will appear here, once for all your devices.</p>';
-  $('#tdet').innerHTML=`<div class="tcard ttl"><h2>Notifications</h2><div class="nlist">${rows}</div><div class="setrow" style="justify-content:center">${all.length?'<button class="btn" data-act="nclear">Clear all</button>':''}<button class="btn p" data-act="tclose">Done</button></div></div>`;
-  $('#tdet').hidden=false;[...act,...nws].forEach(([k,n])=>{n.r=1});persistLocal();scheduleSync();bellDot();
+  const tab=ui.bellTab==='n'?'n':'a',cur=tab==='n'?nws:act;
+  const row=([k,n])=>`<div class="nrow${n.r?'':' new'}"><span class="ni">${niOf(k)}</span><div><div>${esc(n.m)}</div><small class="note">${new Date(n.at).toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</small></div></div>`;
+  const un=l=>l.filter(([k,n])=>!n.r).length;
+  const tb=(t,label,l)=>`<button class="ntab${tab===t?' on':''}" data-act="btab" data-t="${t}">${label}${un(l)?`<i class="nb">${un(l)}</i>`:''}</button>`;
+  const rows=cur.length?cur.map(row).join(''):`<p class="note">${tab==='n'?'No news yet. Update notes will appear here.':'Nothing yet. Trophies, ranks, titles, themes and households will appear here.'}</p>`;
+  $('#tdet').innerHTML=`<div class="tcard ttl"><h2>Notifications</h2><div class="ntabs">${tb('a','Activity',act)}${tb('n','News',nws)}</div><div class="nlist">${rows}</div><div class="setrow" style="justify-content:center">${cur.length?'<button class="btn" data-act="nclear">Clear '+(tab==='n'?'news':'activity')+'</button>':''}<button class="btn p" data-act="tclose">Done</button></div></div>`;
+  $('#tdet').hidden=false;cur.forEach(([k,n])=>{n.r=1});persistLocal();scheduleSync();bellDot();
 }
+function bellClear(){const tab=ui.bellTab==='n';Object.entries(NT()).forEach(([k,n])=>{if(isNews(k)===tab)n.x=1});persistLocal();scheduleSync();bellDot();openBell()}
 function notesInit(){
   try{localStorage.removeItem('shelf.notes');localStorage.removeItem('shelf.tu');localStorage.removeItem('shelf.chg')}catch(e){}
   const fresh=!Object.keys(NT()).length&&!db.books.length;
@@ -1949,18 +1957,21 @@ const DOODLES={
 };
 const QUIET=['Book and cuppa.','Coffee time. Get your book.','Get cosy with your favourite author.','Good day. Your shelf is where you left it.','Welcome back.','Nothing special today. Read anyway.','Good to see you.','A quiet day for a chapter.','The kettle is probably on.','Ten pages counts.','Your bookmark has been waiting.','Sit down. The washing can wait.','One more chapter, as usual.','Phone down, book up.','Pick a spot by the window.','Slow reading is still reading.','Somewhere a character is waiting for you.','Biscuit optional, book essential.','The unread pile says hello.','Tea, toast, chapter.','Settle in.','No rush. The book will wait.','Back to the story.','Good evening for it, whatever the hour.'];
 const QSV=['book','candle','cup','shelf','openbook'];
-function doodleFor(ds){
+function doodleFor(ds,qi){
   const e=DOODLES[ds];if(e)return{svg:e[0],line:e[1],special:true};
-  const n=Math.round((new Date(ds+'T00:00:00')-new Date('2026-01-01T00:00:00'))/864e5);
-  const i=((n*5)%QUIET.length+QUIET.length)%QUIET.length;
+  let i=qi;
+  if(i==null){const n=Math.round((new Date(ds+'T00:00:00')-new Date('2026-01-01T00:00:00'))/864e5);i=((n*5)%QUIET.length+QUIET.length)%QUIET.length}
   return{svg:QSV[i%QSV.length],line:QUIET[i],special:false};
 }
+/* special days stay all day; quiet greetings change each time Shelf is opened */
+function quietPick(){
+  if(ui.ddQ==null){let last=-1;try{last=+localStorage.getItem('shelf.dq')}catch(e){}
+    let n;do{n=Math.floor(Math.random()*QUIET.length)}while(n===last&&QUIET.length>1);ui.ddQ=n;try{localStorage.setItem('shelf.dq',String(n))}catch(e){}}
+  return ui.ddQ;
+}
 function doodleCard(){
-  const ds=today(),f=db.flags||(db.flags={});
   if(ui.ddHide)return'';
-  if(f.dd!==ds&&!ui.ddShow){ui.ddShow=ds;f.dd=ds;persistLocal();scheduleSync()}
-  if(ui.ddShow!==ds)return'';
-  const d=doodleFor(ds);
+  const ds=today(),d=doodleFor(ds,DOODLES[ds]?null:quietPick());
   return`<div class="ddcard${d.special?' sp':''}">${DSV(d.svg)}<p>${esc(d.line)}</p><button class="ddx" data-act="ddhide" aria-label="Hide">×</button></div>`;
 }
 
@@ -2020,7 +2031,8 @@ document.addEventListener('click',async e=>{
     case'hhleave':hhAct('leave');break;
     case'hhrename':hhAct('rename');break;
     case'bell':openBell();break;
-    case'nclear':NOTES=[];notesSave();openBell();break;
+    case'nclear':bellClear();break;
+    case'btab':ui.bellTab=ds.t;openBell();break;
     case'reptoggle':d.rep=!d.rep;drawForm();break;
     case'google':doGoogle();break;
     case'resendv':resendVerify();break;
