@@ -1,0 +1,38 @@
+name: Daily doodle reminder
+
+on:
+  schedule:
+    - cron: '17 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check how many days of daily doodles are left
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          end=$(grep -oP "DOODLE_END='\K[0-9-]+" index.html | head -1)
+          if [ -z "$end" ]; then
+            echo "DOODLE_END was not found in index.html"
+            exit 1
+          fi
+          today=$(date -u +%F)
+          left=$(( ( $(date -u -d "$end" +%s) - $(date -u -d "$today" +%s) ) / 86400 ))
+          echo "Last doodle date: $end. Days left: $left."
+          if [ "$left" -le 14 ]; then
+            open=$(gh issue list --state open --search "Daily doodles in:title" --json number --jq 'length')
+            if [ "$open" = "0" ]; then
+              gh issue create \
+                --title "Daily doodles run out on $end" \
+                --assignee "${{ github.repository_owner }}" \
+                --body "@${{ github.repository_owner }} index.html has $left days of daily doodles left. The last one is on $end. Ask Claude for the next batch, replace index.html and sw.js, and close this issue."
+            fi
+          fi
