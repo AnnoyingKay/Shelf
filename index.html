@@ -750,6 +750,8 @@ label.note:has(#hhShow){text-align:left;justify-content:flex-start}
 nav.tabs button[hidden]{display:none}
 .bell{z-index:8}
 .tcell .tdt{display:block;opacity:.65;font-size:11px}
+.twhy{margin:8px 0 2px;font-size:14px;line-height:1.35}
+.mtr{display:inline-flex;flex:none}.mtr svg{display:block}
 
 /* ===== Wide screens: tablet and laptop (phones are untouched) ===== */
 @media (min-width:760px){
@@ -961,7 +963,7 @@ function drawForm(keepScroll){
   ${isNew?'<div class="f"><button class="btn p" data-act="scan" style="width:100%">📷 Scan the barcode on the back of the book</button><div class="note">Works with the ISBN barcode on most printed books.</div></div>':''}
   <div class="f"><label>Title</label><input data-f="title" value="${esc(d.title)}" autocomplete="off"></div>
   <div class="f"><label>Author</label><input data-f="author" value="${esc(d.author)}" autocomplete="off"></div>
-  <div class="f"><button class="btn" data-act="lookup" style="width:100%">Search online for details and cover</button><div class="note" id="lk">${esc(lookupMsg)}</div>
+  <div class="f"><label>Language for searches</label><select id="lkl">${LKL.map(([k,n])=>`<option value="${k}" ${lkLang===k?'selected':''}>${n}</option>`).join('')}</select><div class="note">A scanned barcode keeps the title of that exact edition.</div><button class="btn" data-act="lookup" style="width:100%;margin-top:8px">Search online for details and cover</button><div class="note" id="lk">${esc(lookupMsg)}</div>
   ${lookupRes?lookupRes.map((r,i)=>`<div class="res" data-pick="${i}"><div class="cover" style="width:40px;height:60px;font-size:16px">${r.cover?`<img src="${esc(r.cover)}" alt="" onerror="this.remove()">`:'?'}</div><div class="meta"><div class="t">${esc(r.title)}</div><div class="a">${esc(r.author)}${r.year?' · '+r.year:''}${r.pages?' · '+r.pages+' pages':''}</div></div></div>`).join(''):''}</div>
   <div class="f"><span class="lbl">Status</span><div class="seg">${Object.entries(STATUS).map(([k,v])=>`<button data-st="${k}" class="${d.status===k?'on':''}">${v}</button>`).join('')}</div></div>
   <div class="sec"><h3>Reading dates</h3>${rd||'<div class="note">No dates yet. Set the status above or add a read.</div>'}<button class="btn" data-act="addread">+ Add a read (re-reads too)</button>
@@ -988,7 +990,7 @@ function drawForm(keepScroll){
 function setStatus(s){
   d.status=s;const open=d.reads.filter(r=>r.start&&!r.end).pop();
   if(s==='reading'){if(!open)d.reads.push({start:today(),end:''})}
-  else if(s==='finished'){if(open)open.end=today();else if(!d.reads.some(r=>r.end))d.reads.push({start:'',end:today()});if(d.pages)d.progress=d.pages}
+  else if(s==='finished'){if(open)open.end=today();else if(!d.reads.some(r=>r.end))d.reads.push({start:'',end:today(),u:1});if(d.pages)d.progress=d.pages}
   else if(s==='dnf'){/* leave dates alone */}
 }
 function saveBook(){
@@ -1001,19 +1003,54 @@ function saveBook(){
   save();closeForm();render();toast('Saved');
   try{const after=levelsNow(),ups=[];TR.forEach(t=>{if(after.lvl[t.id]>(before[t.id]||0))ups.push({t,lvl:after.lvl[t.id]})});if(ups.length){const s=seenMap();ups.forEach(u=>{s[u.t.id]=u.lvl});persistLocal();setTimeout(()=>celebrate(ups),600)}}catch(e){}
 }
+const LKL=[['any','Any language'],['en','English'],['es','Spanish'],['fr','French'],['de','German'],['pt','Portuguese'],['it','Italian'],['ca','Catalan']];
+const L3={en:'eng',es:'spa',fr:'fre',de:'ger',pt:'por',it:'ita',ca:'cat'};
+let lkLang=(()=>{try{return localStorage.getItem('shelf.ll')||'any'}catch(e){return'any'}})();
+const jget=async u=>{const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()};
+const yr4=s=>{const m=/\d{4}/.exec(s||'');return m?+m[0]:''};
+const shortSub=a=>(a||[]).filter(s=>s&&s.length<24).slice(0,3);
+async function olIsbn(i){
+  const j=await jget('https://openlibrary.org/api/books?bibkeys=ISBN:'+i+'&format=json&jscmd=data'),x=j['ISBN:'+i];
+  if(!x)return[];
+  return[{title:x.title,author:(x.authors||[]).map(a=>a.name).join(', '),year:yr4(x.publish_date),pages:x.number_of_pages||'',isbn:i,cover:(x.cover&&(x.cover.medium||x.cover.small))||'',subjects:shortSub((x.subjects||[]).map(s=>s.name))}];
+}
+function gbMap(v){const x=v.volumeInfo||{},ids=x.industryIdentifiers||[],id=ids.find(q=>q.type==='ISBN_13')||ids[0],im=x.imageLinks&&(x.imageLinks.thumbnail||x.imageLinks.smallThumbnail);
+  return{title:x.title,author:(x.authors||[]).join(', '),year:yr4(x.publishedDate),pages:x.pageCount||'',isbn:id?id.identifier:'',cover:im?im.replace(/^http:/,'https:'):'',subjects:shortSub((x.categories||[]).flatMap(c=>c.split(' / '))),lang:x.language}}
+async function gbSearch(q,lang){
+  const j=await jget('https://www.googleapis.com/books/v1/volumes?q='+q+'&maxResults=8&printType=books'+(lang&&lang!=='any'?'&langRestrict='+lang:''));
+  return(j.items||[]).map(gbMap).filter(r=>r.title);
+}
+async function olSearch(q,lang){
+  const j=await jget('https://openlibrary.org/search.json?'+q+'&limit=8'+(lang&&lang!=='any'&&L3[lang]?'&language='+L3[lang]:'')+'&fields=title,author_name,first_publish_year,number_of_pages_median,isbn,cover_i,subject');
+  return(j.docs||[]).map(x=>({title:x.title,author:(x.author_name||[]).join(', '),year:x.first_publish_year,pages:x.number_of_pages_median,isbn:(x.isbn||[]).find(i=>i.length===13)||(x.isbn||[])[0]||'',cover:x.cover_i?`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg`:'',subjects:shortSub(x.subject)}));
+}
 async function lookup(auto){
-  const q=d.isbn?'q=isbn:'+encodeURIComponent(d.isbn.replace(/[^0-9Xx]/g,'')):'title='+encodeURIComponent(d.title)+(d.author?'&author='+encodeURIComponent(d.author):'');
-  if(!d.isbn&&!d.title.trim()){lookupMsg='Enter a title or ISBN first.';drawForm();return}
+  const isbn=(d.isbn||'').replace(/[^0-9Xx]/g,'');
+  if(!isbn&&!d.title.trim()){lookupMsg='Enter a title or ISBN first.';drawForm();return}
   lookupMsg='Searching…';drawForm();
-  try{
-    const r=await fetch('https://openlibrary.org/search.json?'+q+'&limit=8&fields=title,author_name,first_publish_year,number_of_pages_median,isbn,cover_i,subject');
-    const j=await r.json();
-    lookupRes=(j.docs||[]).map(x=>({title:x.title,author:(x.author_name||[]).join(', '),year:x.first_publish_year,pages:x.number_of_pages_median,isbn:(x.isbn||[]).find(i=>i.length===13)||(x.isbn||[])[0]||'',cover:x.cover_i?`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg`:'',subjects:(x.subject||[]).filter(s=>s.length<24).slice(0,3)}));
-    if(auto&&lookupRes.length){pick(0);return}
-    lookupMsg=lookupRes.length?'Tap a result to fill in the details.':(auto?'Barcode read, but no match was found. The ISBN is saved. Add the title yourself.':'Nothing found. Try fewer words.');
-  }catch(e){lookupRes=null;lookupMsg='Could not reach Open Library. Check your connection.'}
+  const out=[],add=a=>(a||[]).forEach(r=>{if(r&&r.title&&!out.some(o=>o.title===r.title&&o.author===r.author))out.push(r)});
+  let reached=0;const ok=p=>p.then(v=>{reached++;return v},()=>[]);
+  const gbFirst=lkLang!=='any';
+  if(isbn){
+    /* a barcode names one exact edition, so use the edition record and keep its own title and language */
+    const [a,b]=await Promise.all([ok(olIsbn(isbn)),ok(gbSearch('isbn:'+isbn,'any'))]);
+    const bm=b.filter(r=>!r.lang||lkLang==='any'||r.lang===lkLang);
+    if(gbFirst){add(bm);add(a);add(b)}else{add(a);add(b)}
+    if(!out.length){add(await ok(olSearch('q=isbn:'+encodeURIComponent(isbn),lkLang)))}
+  }else{
+    const t=d.title.trim(),au=(d.author||'').trim();
+    const gq='intitle:'+encodeURIComponent(t)+(au?'+inauthor:'+encodeURIComponent(au):'');
+    const oq='title='+encodeURIComponent(t)+(au?'&author='+encodeURIComponent(au):'');
+    const [g,o]=await Promise.all([ok(gbSearch(gq,lkLang)),ok(olSearch(oq,lkLang))]);
+    if(gbFirst){add(g);add(o)}else{add(o);add(g)}
+  }
+  lookupRes=out.slice(0,8);
+  if(!reached){lookupRes=null;lookupMsg='Could not reach the book databases. Check your connection.'}
+  else if(auto&&lookupRes.length){pick(0);return}
+  else lookupMsg=lookupRes.length?'Tap a result to fill in the details.':(auto?'Barcode read, but no match was found. The ISBN is saved. Add the title yourself.':'Nothing found. Try fewer words'+(lkLang!=='any'?', or set the language to Any.':'.'));
   if(d)drawForm();
 }
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='lkl'){lkLang=t.value;try{localStorage.setItem('shelf.ll',lkLang)}catch(_){}}});
 function pick(i){
   const r=lookupRes[i];d.title=r.title||d.title;d.author=r.author||d.author;if(r.pages)d.pages=r.pages;if(r.cover)d.cover=r.cover;if(r.isbn&&!d.isbn)d.isbn=r.isbn;
   if(!d.genres.length)d.genres=r.subjects;lookupRes=null;lookupMsg='Details added.';drawForm();
@@ -1235,15 +1272,16 @@ function mkCtx(asof){
   for(const b of myBooks()){
     if(b.rep)continue;
     if(asof){const bd=[b.added].concat(b.reads.flatMap(r=>[r.start,r.end])).filter(Boolean).sort()[0];if(bd&&bd>asof)continue}
-    let rs=b.reads;
-    if(asof){rs=[];for(const r of b.reads){if(r.end){if(r.end<=asof)rs.push(r);else if(r.start&&r.start<=asof)rs.push({start:r.start,end:''})}else if(!r.start||r.start<=asof)rs.push(r)}}
+    const br=b.reads.filter(r=>!r.u); /* an undated finish is logged, but never counts as a read */
+    let rs=br;
+    if(asof){rs=[];for(const r of br){if(r.end){if(r.end<=asof)rs.push(r);else if(r.start&&r.start<=asof)rs.push({start:r.start,end:''})}else if(!r.start||r.start<=asof)rs.push(r)}}
     const hasEnd=rs.some(r=>r.end);let st=b.status;
-    if(asof&&!hasEnd){if(b.status==='finished'&&!b.reads.some(r=>r.end))st='finished';else if(b.status==='finished'||b.status==='reading')st=rs.some(r=>r.start)?'reading':'want'}
+    if(asof&&!hasEnd){if(b.status==='finished'&&!br.some(r=>r.end))st='finished';else if(b.status==='finished'||b.status==='reading')st=rs.some(r=>r.start)?'reading':'want'}
     V.push({b,rs,st,fin:hasEnd||(!STRICT&&st==='finished')});
   }
   const F=V.filter(v=>v.fin),E=[],R=[];
-  F.forEach(v=>{const ends=v.rs.filter(r=>r.end);if(ends.length)ends.forEach(r=>E.push({b:v.b,s:r.start||'',e:r.end}));else E.push({b:v.b,s:'',e:''})});
-  V.forEach(v=>v.rs.forEach(r=>R.push(r)));
+  F.forEach(v=>{const ends=v.rs.filter(r=>r.end);if(ends.length)ends.forEach(r=>E.push(r.u?{b:v.b,s:'',e:''}:{b:v.b,s:r.start||'',e:r.end}));else E.push({b:v.b,s:'',e:''})});
+  V.forEach(v=>v.rs.forEach(r=>{if(!r.u)R.push(r)}));
   const c={V,F,E,R,reg:V.length,fin:F.length};
   c.pages=E.reduce((s,e)=>s+(+e.b.pages||0),0);
   c.cat={e:0,a:0,c:0,p:0};F.forEach(v=>{const k=CAT(v.b.format);if(k)c.cat[k]++});
@@ -1319,7 +1357,7 @@ const TR=[
  O_('fan','Fan Club','heart','Finish 5 books by one author','At this point, send them a card.',c=>{const m={};c.F.forEach(v=>{const a=(v.b.author||'').trim().toLowerCase();if(a)m[a]=(m[a]||0)+1});return Math.max(0,...Object.values(m))>=5?1:0}),
  O_('tidy','Tidy Shelf','checklist','Have 25 books with pages and tags filled in','The spreadsheet in you approves.',c=>c.V.filter(v=>+v.b.pages>0&&(v.b.genres||[]).length).length>=25?1:0),
  O_('mount','TBR Mountain','mountain','Have 25 books on your want to read list','Base camp established.',c=>c.V.filter(v=>v.st==='want').length,[25]),
- O_('tamer','TBR Tamer','target','Finish 10 books that waited 6 months or more','They waited. You delivered.',c=>c.F.filter(v=>{const e=v.rs.map(r=>r.end).filter(Boolean).sort().pop();return e&&v.b.added&&dn(v.b.added,e)>=183}).length,[10]),
+ O_('tamer','TBR Tamer','target','Finish 10 books that waited 6 months or more','They waited. You delivered.',c=>c.F.filter(v=>{const e=v.rs.filter(r=>!r.u).map(r=>r.end).filter(Boolean).sort().pop();return e&&v.b.added&&dn(v.b.added,e)>=183}).length,[10]),
  O_('ends','Bookends','layout-columns','Finish a book in the first and the last week of a year','Opened the year with a book and closed it with another.',c=>{const y={};Object.keys(c.D).forEach(d=>{const o=y[d.slice(0,4)]=y[d.slice(0,4)]||{a:0,b:0};if(d.slice(5)<='01-07')o.a=1;if(d.slice(5)>='12-25')o.b=1});return Object.values(y).some(o=>o.a&&o.b)?1:0}),
 
  T_('goal','Goal Getter','target','Reach your yearly reading goal','Promised, planned, done.',c=>goalYears(c).filter(x=>x.n>=x.g).length,[1,3,5],'yearly goals reached'),
@@ -1410,7 +1448,7 @@ const FAV=[
  ['patria','Patria','Fernando Aramburu','aramburu',['patria'],'f_patria','Two families, one village, and the long silence.']
 ];
 FAV.forEach(r=>TR.push({id:'f_'+r[0],n:r[1],k:'F',g:r[5],t:[1],d:`Finish ${r[1]} by ${r[2]}`,q:r[6],v:c=>rareHit(c,r)?1:0}));
-TR.push({id:'favs',n:'Own Shelf',k:'H',g:'heart',t:[3,7,13],u:'of Klaud’s Favourites finished',q:'Your own shelf, and it shows.',v:c=>FAV.filter(r=>rareHit(c,r)).length});
+TR.push({id:'favs',n:'Own Shelf',k:'H',g:'heart',t:[3,7,13],u:'of Kay’s Favourites finished',q:'Your own shelf, and it shows.',v:c=>FAV.filter(r=>rareHit(c,r)).length});
 const START=['scan','cloud','exp','ward'];
 const TBY=Object.fromEntries(TR.map(t=>[t.id,t]));
 const lvlOf=(t,v)=>t.t.filter(x=>v>=x).length;
@@ -1424,7 +1462,7 @@ function levelsNow(){
 }
 function candDates(){
   const s=new Set();myBooks().forEach(b=>{if(b.rep)return;s.add(b.added);b.reads.forEach(r=>{s.add(r.start);s.add(r.end)})});
-  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl'&&k!=='tbest'&&k!=='card'&&k!=='dd'&&k!=='nick'&&k!=='favs')s.add(f[k])});
+  const f=db.flags||{};Object.keys(f).forEach(k=>{if(k==='themes')Object.values(f.themes||{}).forEach(d=>s.add(d));else if(k!=='seen'&&k!=='notes'&&k!=='unl'&&k!=='tbest'&&k!=='card'&&k!=='dd'&&k!=='nick'&&k!=='rn'&&k!=='favs'&&k!=='favt')s.add(f[k])});
   let a=[...s].filter(x=>/^\d{4}-\d\d-\d\d$/.test(x)).sort();
   if(a.length>240){const k=Math.ceil(a.length/240),b=[];for(let i=k-1;i<a.length;i+=k)b.push(a[i]);if(b[b.length-1]!==a[a.length-1])b.push(a[a.length-1]);a=b}
   return a;
@@ -1552,7 +1590,7 @@ function renderTrophies(){
   ${S.seasons.length?`<div class="sec"><h3>Years and quarters</h3><div class="tgrid">${ey.concat(eq).map(sc).join('')}</div><p class="note">Yearly cups need 6, 12, 24 or 52 books. Quarterly medals need 3, 5, 8 or 12.</p></div>`:''}
   ${sec('Holidays and festivals',holE,'Each holiday trophy has three levels: read on the day, start and finish within it, and do it in three different years.')}
   ${sec('Hidden',hidE)}
-  ${sec('Klaud’s Favourites',favE,'The books that mean the most. Finish one to unlock its heart.')}
+  ${sec('Kay’s Favourites',favE,'The books that mean the most. Finish one to unlock its heart.')}
   ${sec('Rare finds',rarE,'Special books, quietly excellent and not famous. Finish one to unlock its bookplate.')}`;
   const lv={};S.items.forEach(x=>lv[x.t.id]=x.lvl);S.items.forEach(x=>{seen[x.t.id]=x.lvl});persistLocal();
   updateDot(true);
@@ -1573,33 +1611,37 @@ function stripInner(){
   return e.map(x=>`<button class="tmini" data-trophy="${x.t.id}" aria-label="${esc(x.t.n)}">${trophySVG(x.t,x.lvl,{w:42})}</button>`).join('')+`<button class="more" data-tab="trophies">All ${S.items.filter(x=>x.lvl>0).length} ›</button>`;
 }
 function fillStrip(){const el=$('#tstrip');if(!el||!TCACHE||TCACHE.ver!==dbVer)return;el.className='tstrip';el.innerHTML=stripInner();titleTick();refreshChips()}
-function showTrophy(id){
+function showTrophy(id,choose){
   const S=trophyState(),x=S.by[id];if(!x)return;const t=x.t,multi=t.t.length>1;
   const hidden=!x.lvl&&!(t.k==='L'&&x.val>0)&&!START.includes(t.id);if(hidden)return;
   const descOf=i=>Array.isArray(t.d)?t.d[i]:(t.u?`${fmtN(t.t[i])} ${t.u}`:t.d);
   const rows=t.t.map((th,i)=>`<div><i style="background:${MDOT[metalIdx(t,i+1)]};opacity:${i<x.lvl?1:.35}"></i><span style="flex:1">${multi?`<b>${MET[metalIdx(t,i+1)]}</b> · `:''}${esc(descOf(i))}</span><span class="note">${i<x.lvl?(x.when[i]?fmtDate(x.when[i]):'Earned'):(multi||th>1?'Locked':'')}</span></div>`).join('');
   const head=x.lvl?(multi?`${MET[metalIdx(t,x.lvl)]} level`:'Earned'):'Not yet earned';
   const next=t.t[x.lvl];
-  $('#tdet').innerHTML=`<div class="tcard"><div class="tbig">${trophySVG(t,x.lvl,{w:112})}</div><h2>${esc(t.n)}</h2><div class="note">${head}${x.lvl&&!multi&&x.when[0]?' · '+fmtDate(x.when[0]):''}</div>${x.lvl?`<p class="tquote">“${esc(t.q)}”</p>`:`<p class="note" style="margin:10px 0">${esc(descOf(0))}</p>`}${!x.lvl&&(multi||t.t[0]>1)?`<div class="bar"><i style="width:${Math.min(100,Math.round(x.val/t.t[0]*100))}%"></i></div><div class="note">${fmtN(x.val)} of ${fmtN(t.t[0])}</div>`:''}${next&&x.lvl&&(t.k==='L'||t.k==='T'&&t.u)?`<div class="bar"><i style="width:${Math.min(100,Math.round(x.val/next*100))}%"></i></div><div class="note">${fmtN(x.val)} of ${fmtN(next)} for ${MET[metalIdx(t,x.lvl+1)]}</div>`:''}${multi||t.t[0]>1||x.lvl?`<div class="ttiers">${rows}</div>`:''}<div class="setrow" style="justify-content:center"><button class="btn p" data-act="tclose">Close</button></div></div>`;
+  $('#tdet').innerHTML=`<div class="tcard"><div class="tbig">${trophySVG(t,x.lvl,{w:112})}</div><h2>${esc(t.n)}</h2><div class="note">${head}${x.lvl&&!multi&&x.when[0]?' · '+fmtDate(x.when[0]):''}</div>${x.lvl?`<p class="tquote">“${esc(t.q)}”</p>`:`<p class="note" style="margin:10px 0">${esc(descOf(0))}</p>`}${!x.lvl&&(multi||t.t[0]>1)?`<div class="bar"><i style="width:${Math.min(100,Math.round(x.val/t.t[0]*100))}%"></i></div><div class="note">${fmtN(x.val)} of ${fmtN(t.t[0])}</div>`:''}${next&&x.lvl&&(t.k==='L'||t.k==='T'&&t.u)?`<div class="bar"><i style="width:${Math.min(100,Math.round(x.val/next*100))}%"></i></div><div class="note">${fmtN(x.val)} of ${fmtN(next)} for ${MET[metalIdx(t,x.lvl+1)]}</div>`:''}${multi||t.t[0]>1||x.lvl?`<div class="ttiers">${rows}</div>`:''}${x.lvl&&typeof favtPart==='function'?favtPart(id,choose):''}<div class="setrow" style="justify-content:center"><button class="btn p" data-act="tclose">Close</button></div></div>`;
   $('#tdet').hidden=false;
 }
+const why=it=>{const t=it.t,i=Math.max(0,it.lvl-1);
+  if(Array.isArray(t.d))return t.d[i]+'.';
+  if(t.u&&t.t[i]!=null)return `You reached ${fmtN(t.t[i])} ${t.u}.`;
+  return (t.d||'')+(t.d&&!/[.!?]$/.test(t.d)?'.':'')};
 let tqueue=[];
 function celebrate(list){
-  list.forEach(it=>{try{notify('tr:'+it.t.id+':'+it.lvl,'Trophy earned: '+it.t.n,'🏆')}catch(e){}});
+  list.forEach(it=>{try{notify('tr:'+it.t.id+':'+it.lvl,'Trophy earned: '+it.t.n+'. '+why(it),'🏆')}catch(e){}});
   tqueue=list.slice();popNext();
 }
 function popNext(){
   const el=$('#tpop');const it=tqueue.shift();
   if(!it){el.hidden=true;el.innerHTML='';return}
   const t=it.t,multi=t.t.length>1;
-  el.innerHTML=`<div class="tcard"><div class="thead">${esc(T().tw||'A new trophy!')}</div><div class="tbig">${trophySVG(t,it.lvl,{w:132})}</div><h2>${esc(t.n)}</h2><div class="note">${multi?MET[metalIdx(t,it.lvl)]+' level':'Trophy earned'}</div><p class="tquote">“${esc(t.q)}”</p><div class="setrow" style="justify-content:center"><button class="btn p" data-act="${tqueue.length?'tnext':'tpclose'}">${tqueue.length?`Next (${tqueue.length} more)`:'Lovely'}</button></div></div>`;
+  el.innerHTML=`<div class="tcard"><div class="thead">${esc(T().tw||'A new trophy!')}</div><div class="tbig">${trophySVG(t,it.lvl,{w:132})}</div><h2>${esc(t.n)}</h2><div class="note">${multi?MET[metalIdx(t,it.lvl)]+' level':'Trophy earned'}</div><p class="twhy"><b>Why:</b> ${esc(why(it))}</p><p class="tquote">“${esc(t.q)}”</p><div class="setrow" style="justify-content:center"><button class="btn p" data-act="${tqueue.length?'tnext':'tpclose'}">${tqueue.length?`Next (${tqueue.length} more)`:'Lovely'}</button></div></div>`;
   el.hidden=false;
 }
 function setFlag(k){if(!db.flags[k]){db.flags[k]=today();save()}}
 function noteTheme(id){db.flags.themes=db.flags.themes||{};if(!db.flags.themes[id]){db.flags.themes[id]=today();save()}}
 
 /* ----- titles: a rank (by trophies earned) and an optional flair (from a specific trophy) ----- */
-const RK=[0,3,7,12,18,25,33,42,52,63,75,88,102,116,128,140];
+const RK=[0,12,75,150,250,400,600,900,1250,1700,2300,3100,4100,5250,6750,8500]; /* ranks run on hidden points, not trophy counts */
 const RANKS={
  nook:['Newcomer','Browser','Regular','Page Turner','Bookmarker','Shelf Keeper','Avid Reader','Bookworm','Bibliophile','Collector','Archivist','Curator','Librarian','Head Librarian','Grand Librarian','Legend'],
  cat:['Kitten','Curious Kit','Cushion Warmer','Lap Sitter','Sunbeam Seeker','Purr Reader','Shelf Prowler','Nap Scholar','Whisker Wise','Library Cat','Senior Mouser','Cat Scholar','Head Cat','Grand Tabby','Nine Lives','Legendary Cat'],
@@ -1632,7 +1674,7 @@ const FLAIR=[
  ['goal','On Target','goal',1],['over','Overachiever','over',1],['b2b','Back-to-Back','b2b',1],['early','Early Bird','early',1],['qm','Quarter Master','fourq',1],
  ['sun','Sun Reader','summer',1],['blanket','Blanket Reader','winter',1],['mount','Mountaineer','mount',1],['slay','Pile Slayer','tamer',1],
  ['px','Pixel Pusher','fe',2],['ear','Earworm','fa',2],['panel','Panel Master','fc',2],['paper','Paper Purist','fp',2],
- ['hunt','Treasure Hunter','gems',1],['odd','Curator of Oddities','gems',3],['kin','Kindred Spirit','favs',1],['twin','Klaud’s Twin','favs',3],
+ ['hunt','Treasure Hunter','gems',1],['odd','Curator of Oddities','gems',3],['kin','Kindred Spirit','favs',1],['twin','Kay’s Twin','favs',3],
  ['hoard1','Trophy Hunter','meta',1],['hoard4','Dragon on the Hoard','meta',4],
  ['hatter','The Mad Hatter','bday',1],['lucky17','Lucky Reader','pat',1],['spook','Spooky Reader','hallo',1],['fire','Fireside Reader','xm',1],['egg','Egg Hunter','easter',1],['rom','Hopeless Romantic','val',1],['f13','Unlucky Charm','f13',1],
  ['exact','Exactly Right','round',1],['trip','Triple Threat','triple',1],['pali','Palindromist','pal',1],['date','Date Whisperer','mirror',1],['fortytwo','Forty-Two','ans',1]
@@ -1641,15 +1683,28 @@ FLAIR.push({k:'creator',n:'The Creator',id:'',l:0,gift:1,ok:()=>false});
 FLAIR.push({k:'fest',n:'Festive',id:'',l:0,sub:'5 holiday trophies',ok:S=>S.items.filter(x=>x.t.k==='D'&&x.lvl>0).length>=5});
 FLAIR.push({k:'cal',n:'Calendar Keeper',id:'',l:0,sub:'12 holiday trophies',ok:S=>S.items.filter(x=>x.t.k==='D'&&x.lvl>0).length>=12});
 const earnedN=S=>S.items.filter(x=>x.lvl>0).length;
-const rankIdx=n=>{let r=0;RK.forEach((x,i)=>{if(n>=x)r=i});return r};
+const rnThemed=()=>{const x=db.flags&&db.flags.rn;return!!(x&&x.v)};
+const rankNames=()=>rnThemed()?(RANKS[theme]||RANKS.nook):RANKS.nook; /* one set of rank names for everyone, unless you opt in to the theme's */
+const trophyPts=(t,l)=>{let s=0;for(let i=1;i<=l;i++)s+=t.k==='L'?5*i:t.k==='T'?6*i:t.k==='D'?8*i:t.k==='H'?10*i:(t.k==='R'||t.k==='F')?20:6;return s};
+function pointsOf(S){
+  if(S.pts!=null)return S.pts;
+  let p=0,lg=0;
+  S.items.forEach(x=>{if(x.lvl>0)p+=trophyPts(x.t,x.lvl)});
+  /* only a dated finish scores as a read; logging a book (to read, reading, did not finish, undated finish) is worth one point, with no cap */
+  myBooks().forEach(b=>{if(b.rep)return;const ends=(b.reads||[]).filter(r=>r.end&&!r.u).length;
+    if(ends>0)p+=5+2*Math.min(ends-1,2);
+    else lg++});
+  return S.pts=p+lg;
+}
+const rankIdx=S=>{const n=pointsOf(S);let r=0;RK.forEach((x,i)=>{if(n>=x)r=i});const lv=id=>(S.by[id]&&S.by[id].lvl)||0;if(!lv('open'))r=0;else if(!lv('fin'))r=Math.min(r,1);return r}; /* a first dated finish for Browser, ten finished for Regular and beyond */
 const ttl=()=>{db.flags.title=db.flags.title||{};return db.flags.title};
 const isOwner=()=>!!(st.user&&st.owner&&st.user.uid===st.owner);
 const grantedKeys=()=>db.sync.granted||[];
 const flairOf=S=>FLAIR.filter(f=>f.ok(S)||grantedKeys().includes(f.k)||((f.k==='creator'||f.k==='librarian')&&isOwner()));
 const nickOf=()=>{const n=db.flags.nick;return n&&n.v?String(n.v):''};
 function mine(S){
-  const t=ttl(),n=earnedN(S),cur=rankIdx(n),r=Math.max(0,Math.min(t.rank==null?cur:t.rank,cur)),fe=flairOf(S),f=fe.find(x=>x.k===t.flair);
-  return{n,cur,r,rank:(RANKS[theme]||RANKS.nook)[r],flair:f?f.n:'',fe};
+  const t=ttl(),n=earnedN(S),cur=rankIdx(S),r=Math.max(0,Math.min(t.rank==null?cur:t.rank,cur)),fe=flairOf(S),f=fe.find(x=>x.k===t.flair);
+  return{n,cur,r,rank:rankNames()[r],flair:f?f.n:'',fe};
 }
 
 /* ----- themes: Nook to start, the rest open through books, levels, seasons or verification ----- */
@@ -1748,21 +1803,21 @@ function notesInit(){
   CHANGES.forEach((c,i)=>{if(fresh&&i>0)return;notify(c.id,c.m,c.i)});
 }
 function rankBar(S){
-  const n=earnedN(S),cur=rankIdx(n),names=RANKS[theme]||RANKS.nook;
+  const n=pointsOf(S),cur=rankIdx(S),names=rankNames();
   if(cur>=RK.length-1)return`<div class="rbar"><i style="width:100%"></i></div><p class="note">Top rank reached: ${esc(names[cur])}.</p>`;
-  const lo=RK[cur],hi=RK[cur+1],pc=Math.round((n-lo)/(hi-lo)*100),left=hi-n;
-  return`<div class="rbar"><i style="width:${pc}%"></i></div><p class="note">${left} more ${left===1?'trophy':'trophies'} to reach ${esc(names[cur+1])}.</p>`;
+  const lo=RK[cur],hi=RK[cur+1],pc=Math.max(2,Math.min(100,Math.round((n-lo)/(hi-lo)*100)));
+  return`<div class="rbar"><i style="width:${pc}%"></i></div><p class="note">Next rank: ${esc(names[cur+1])}. Books you read and trophies you earn both count.</p>`;
 }
 function titleTick(){
   let S=TCACHE;if(!S||S.ver!==dbVer)return;
   if(!db.flags.tbest){STRICT=false;TCACHE=null;const L=trophyState(),tb={};L.items.forEach(x=>{if(x.lvl>0)tb[x.t.id]=x.lvl});db.flags.tbest=tb;STRICT=true;TCACHE=null;persistLocal();scheduleSync();S=trophyState()}
-  const t=ttl(),n=earnedN(S),cur=rankIdx(n),fe=flairOf(S).map(x=>x.k);let ch=false,msg='';
+  const t=ttl(),cur=rankIdx(S),fe=flairOf(S).map(x=>x.k);let ch=false,msg='';
   themeCheck();
   if(t.top==null){t.top=cur;t.rank=cur;t.at=0;t.flair=t.flair||'';t.fl=fe;ch=true}
   else{
-    if(cur>t.top){t.top=cur;t.rank=cur;t.at=Date.now();ch=true;msg='New rank: '+(RANKS[theme]||RANKS.nook)[cur];notify('rank:'+cur,msg,'🎖️')}
+    if(cur>t.top){t.top=cur;t.rank=cur;t.at=Date.now();ch=true;msg='New rank: '+rankNames()[cur];notify('rank:'+cur,msg+'. Your books and trophies added up to it.','🎖️')}
     const nf=fe.filter(k=>!(t.fl||[]).includes(k));
-    if(nf.length){t.fl=(t.fl||[]).concat(nf);ch=true;nf.forEach(k=>{const f0=FLAIR.find(f=>f.k===k);if(f0)notify('flair:'+k,'New title unlocked: '+f0.n,'🏅')});if(!msg)msg='New title unlocked: '+FLAIR.find(f=>f.k===nf[0]).n+(nf.length>1?` (+${nf.length-1} more)`:'')}
+    if(nf.length){t.fl=(t.fl||[]).concat(nf);ch=true;nf.forEach(k=>{const f0=FLAIR.find(f=>f.k===k);if(f0)notify('flair:'+k,'New title unlocked: '+f0.n+(TBY[f0.id]?'. It comes from the '+TBY[f0.id].n+' trophy.':''),'🏅')});if(!msg)msg='New title unlocked: '+FLAIR.find(f=>f.k===nf[0]).n+(nf.length>1?` (+${nf.length-1} more)`:'')}
   }
   {const tb=db.flags.tbest||(db.flags.tbest={});S.items.forEach(x=>{if(x.lvl>(tb[x.t.id]|0)){tb[x.t.id]=x.lvl;ch=true}})}
   if(ch){persistLocal();scheduleSync()}
@@ -1777,12 +1832,12 @@ function chipBtn(){const ok=TCACHE&&TCACHE.ver===dbVer;return`<button class="tch
 function refreshChips(){document.querySelectorAll('.tchip').forEach(b=>{b.innerHTML=chipHTML();b.style.visibility=''})}
 function titleCard(){return`<div class="sec ttop"><span class="note">Your title</span>${chipBtn()}</div>`}
 function openTitles(){
-  const S=trophyState(),m=mine(S),names=RANKS[theme]||RANKS.nook,nxt=RK[m.cur+1];
-  const rrows=names.map((nm,i)=>{const open=i<=m.cur;return`<button class="trow${i===m.r?' on':''}"${open?` data-rank="${i}"`:' disabled'}><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':open?RK[i]+' trophies':(RK[i]-m.n)+' to go'}</span></button>`}).join('');
+  const S=trophyState(),m=mine(S),names=rankNames(),nxt=RK[m.cur+1];
+  const rrows=names.map((nm,i)=>{const open=i<=m.cur;return`<button class="trow${i===m.r?' on':''}"${open?` data-rank="${i}"`:' disabled'}><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':open?'Reached':'Not yet'}</span></button>`}).join('');
   const frows=`<button class="trow${m.flair?'':' on'}" data-flair=""><span>No flair</span><span class="note">${m.flair?'':'Equipped'}</span></button>`+m.fe.map(f=>`<button class="trow${f.n===m.flair?' on':''}" data-flair="${f.k}"><span>${esc(f.n)}</span><span class="note">${f.n===m.flair?'Equipped':f.ok(S)?esc(f.sub||(TBY[f.id]?TBY[f.id].n:'')):'Gifted'}</span></button>`).join('');
-  $('#tdet').innerHTML=`<div class="tcard ttl"><h2>Titles</h2><div class="note">${m.n} trophies${nxt?` · next rank at ${nxt}`:' · top rank reached'}</div>
+  $('#tdet').innerHTML=`<div class="tcard ttl"><h2>Titles</h2><div class="note">${m.n} trophies${nxt?'':' · top rank reached'}</div>
   <h3>Nickname</h3><div class="f"><input id="nick" maxlength="20" placeholder="Optional, up to 20 characters" value="${esc(nickOf())}" autocomplete="off"></div>
-  <h3>Rank</h3><p class="note">Your rank moves up by itself as you earn trophies. You can switch to any rank you have already reached.</p><div class="tlist">${rrows}</div>
+  <h3>Rank</h3><p class="note">Your rank moves up by itself as you read books and earn trophies. You can switch to any rank you have already reached.</p><div class="tlist">${rrows}</div>
   <h3>Flair</h3><p class="note">${m.fe.length?'Earned from specific trophies, or given to you. Pick one to show next to your rank.':'Flair titles are earned from specific trophies. Your first one will appear here.'}</p><div class="tlist">${frows}</div>
   <div class="setrow" style="justify-content:center"><button class="btn p" data-act="tclose">Done</button></div></div>`;
   $('#tdet').hidden=false;
@@ -1813,7 +1868,7 @@ function mergeFlags(a,b){
       new Set([...Object.keys(x),...Object.keys(y)]).forEach(i=>{v[i]=(k==='seen'||k==='tbest')?Math.max(+x[i]||0,+y[i]||0):(!x[i]?y[i]:!y[i]?x[i]:(x[i]<y[i]?x[i]:y[i]))});
     }else if(k==='title')v=mergeTitle(a[k],b[k]);
     else if(k==='dd'){const x=a[k]||'',y=b[k]||'';v=x>y?x:y}
-    else if(k==='nick'||k==='card'||k==='favs'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
+    else if(k==='nick'||k==='card'||k==='rn'||k==='favs'||k==='favt'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
     else{const x=a[k],y=b[k];v=!x?y:!y?x:(x<y?x:y)}
     if(v!==undefined)o[k]=v;
   });
@@ -1822,7 +1877,7 @@ function mergeFlags(a,b){
 
 /* ----- rank insignia: simple marks first, richer ones as you climb ----- */
 function rankSVG(i,w){
-  const K=SK[theme]||SK.nook,m=[0,0,0,0,1,1,1,1,2,2,2,2,3,3,4,4][i],f=pk(K.f,m),sc=pk(K.s,m),a=K.a&&typeof K.a==='string'&&i<4?sc:sc;
+  const K=SK[theme]||SK.nook,m=[0,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4][i],f=pk(K.f,m),sc=pk(K.s,m),a=K.a&&typeof K.a==='string'&&i<4?sc:sc;
   const st=`fill="${f}" stroke="${sc}" stroke-width="1.6" stroke-linejoin="round"`;
   const chev=y=>`<path d="M5 ${y+9}L24 ${y}L43 ${y+9}V${y+14}L24 ${y+5}L5 ${y+14}Z" ${st}/>`;
   const rock=y=>`<path d="M5 ${y}Q24 ${y+12} 43 ${y}" fill="none" stroke="${sc}" stroke-width="5" stroke-linecap="round"/><path d="M5 ${y}Q24 ${y+12} 43 ${y}" fill="none" stroke="${f}" stroke-width="2.4" stroke-linecap="round"/>`;
@@ -1843,12 +1898,12 @@ function rankSVG(i,w){
    case 6:b=chev(2)+chev(9)+chev(16)+rock(29)+rock(35)+rock(41);break;
    case 7:b=bar(21);break;
    case 8:b=bar(15)+bar(27);break;
-   case 9:b=star(24,24,19);break;
-   case 10:b=star(13,24,11)+star(35,24,11);break;
-   case 11:b=star(24,13,12)+star(12,34,12)+star(36,34,12);break;
-   case 12:b=wreath(24,23,19)+star(24,23,11);break;
-   case 13:b=wreath(24,25,20)+star(24,16,8)+star(15,31,8)+star(33,31,8);break;
-   case 14:b=wings+wreath(24,28,16)+star(24,28,9)+crown(2);break;
+   case 9:b=bar(10)+bar(21)+bar(32);break;
+   case 10:b=star(24,24,19);break;
+   case 11:b=star(13,24,11)+star(35,24,11);break;
+   case 12:b=star(24,13,12)+star(12,34,12)+star(36,34,12);break;
+   case 13:b=wreath(24,23,19)+star(24,23,11);break;
+   case 14:b=wreath(24,25,20)+star(24,16,8)+star(15,31,8)+star(33,31,8);break;
    default:b=wings+wreath(24,25,15)+star(24,23,6.5)+star(15,31,5)+star(33,31,5)+crown(0)+`<path d="M6 39H42L38 43.5L42 48H6L10 43.5Z" ${st}/>`;
   }
   return`<svg class="rsvg" viewBox="0 -2 48 52" width="${w||28}" height="${Math.round((w||28)*52/48)}" role="img" aria-label="Rank ${i+1} of 16">${b}</svg>`;
@@ -1949,10 +2004,10 @@ const psig=b=>JSON.stringify([b.status,b.rating,b.review,b.notes,b.reads,b.progr
 const cardCfg=()=>db.flags.card||{};
 const cardTheme=()=>{const c=cardCfg().c;return c&&THEMES[c]?c:theme};
 const cardOn=()=>cardCfg().on!==0;
-function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};{const fb=favBooks();if(fb.length)c.b=fb.map(favSmall)}if(cardOn()){const m=mine(trophyState());c.r=m.rank;c.f=m.flair||'';c.t=m.n}return c}
-const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''))&&JSON.stringify((a||{}).b||[])===JSON.stringify((b||{}).b||[]);
+function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};{const fb=favBooks();if(fb.length)c.b=fb.map(favSmall);const ft=favtSmall();if(ft.length)c.h=ft}if(cardOn()){const m=mine(trophyState());c.r=m.rank;c.f=m.flair||'';c.t=m.n}return c}
+const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''))&&JSON.stringify((a||{}).b||[])===JSON.stringify((b||{}).b||[])&&JSON.stringify((a||{}).h||[])===JSON.stringify((b||{}).h||[]);
 function cardHTML(c,you){const T=THEMES[c.k]||THEMES.nook,d=T.dots,h=d[2].replace('#',''),L=h.length===6?(0.299*parseInt(h.slice(0,2),16)+0.587*parseInt(h.slice(2,4),16)+0.114*parseInt(h.slice(4,6),16)):255,tx=L>140?'#2b2118':'#f5efe6';
-  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}${c.b&&c.b.length?`<div class="mfav">${c.b.slice(0,3).map(miniBook).join('')}</div>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
+  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}${c.b&&c.b.length?`<div class="mfav">${c.b.slice(0,3).map(miniBook).join('')}</div>`:''}${c.h&&c.h.length?`<div class="mfav">${c.h.slice(0,3).map(miniTro).join('')}</div>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
 let HH=null,hhBusy=false,hhInv=[],hhMsg='';
 function hhTouch(b){
   const S=db.sync;if(!S.hid)return;S.hdirty=S.hdirty||{};
@@ -2266,11 +2321,29 @@ function favFill(){
   const l=myBooks().filter(b=>!ids.includes(b.id)&&[b.title,b.author,b.series].join(' ').toLowerCase().includes(s)).slice(0,6);
   el.innerHTML=l.length?l.map(b=>`<button class="favres" data-act="favadd" data-id="${esc(b.id)}">${miniBook(favSmall(b))}<span class="ft"><b>${esc(b.title)}</b><small>${esc(b.author)}</small></span><span class="note">Add</span></button>`).join(''):'<p class="note">No book matches that.</p>';
 }
+/* ---------- favourite trophies on the card ---------- */
+const favtIds=()=>{const f=db.flags.favt;return f&&Array.isArray(f.ids)?f.ids.filter(i=>TBY[i]):[]};
+const favtLvl=i=>{const x=trophyState().by[i];return x?x.lvl:0};
+const favtSmall=()=>favtIds().map(i=>({i,l:favtLvl(i)})).filter(h=>h.l>0).slice(0,3);
+const miniTro=h=>{const t=TBY[h.i];if(!t)return'';return`<span class="mtr" title="${esc(t.n)}">${trophySVG(t,Math.max(1,+h.l||1),{w:28})}</span>`};
+function favtSave(ids){db.flags.favt={ids:ids.slice(0,3),at:Date.now()};persistLocal();scheduleSync();if(typeof sync==='function')sync(true);if(ui.tab==='profile')renderProfile(true)}
+function favtPart(id,choose){
+  const ids=favtIds(),row=b=>`<div class="setrow" style="justify-content:center">${b}</div>`;
+  if(ids.includes(id))return row(`<button class="btn" data-act="ftdel" data-id="${id}">Remove from my card</button>`);
+  if(ids.length<3||!choose)return row(`<button class="btn" data-act="ftadd" data-id="${id}">Add to my card</button>`);
+  return`<p class="note" style="margin:10px 0 6px">Your card already shows three. Pick one to replace.</p>`+ids.map(o=>`<button class="favres" data-act="ftswap" data-id="${id}" data-old="${o}"><span class="mtr">${trophySVG(TBY[o],Math.max(1,favtLvl(o)),{w:30})}</span><span class="ft"><b>${esc(TBY[o].n)}</b></span><span class="note">Replace</span></button>`).join('');
+}
+function favtBox(){
+  const ids=favtIds();
+  return`<div class="sec"><h3>Favourite trophies</h3><p class="note">Pick up to three earned trophies for your card. Open a trophy on the Trophies tab and choose Add to my card.</p>
+  ${ids.map(i=>`<div class="favrow"><span class="mtr">${trophySVG(TBY[i],Math.max(1,favtLvl(i)),{w:34})}</span><span class="ft"><b>${esc(TBY[i].n)}</b></span><button class="x" data-act="ftdel" data-id="${i}" aria-label="Remove ${esc(TBY[i].n)}">✕</button></div>`).join('')}
+  ${ids.length?'':'<p class="note">None chosen yet.</p>'}</div>`;
+}
 function titleLists(){
-  const S=trophyState(),m=mine(S),names=RANKS[theme]||RANKS.nook;
-  const rrows=names.map((nm,i)=>i>m.cur?'':`<button class="trow${i===m.r?' on':''}" data-rank="${i}"><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':RK[i]+' trophies'}</span></button>`).join('');
+  const S=trophyState(),m=mine(S),names=rankNames();
+  const rrows=names.map((nm,i)=>i>m.cur?'':`<button class="trow${i===m.r?' on':''}" data-rank="${i}"><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':'Reached'}</span></button>`).join('');
   const frows=`<button class="trow${m.flair?'':' on'}" data-flair=""><span>No flair</span><span class="note">${m.flair?'':'Equipped'}</span></button>`+m.fe.map(f=>`<button class="trow${f.n===m.flair?' on':''}" data-flair="${f.k}"><span>${esc(f.n)}</span><span class="note">${f.n===m.flair?'Equipped':f.ok(S)?esc(f.sub||(TBY[f.id]?TBY[f.id].n:'')):'Gifted'}</span></button>`).join('');
-  return`<div class="sec"><h3>Rank</h3><p class="note">${m.n} trophies. Your rank moves up by itself as you earn trophies, and you can switch to any rank you have reached. Ranks still to come, and how far away they are, are on the Trophies tab.</p><div class="tlist">${rrows}</div></div>
+  return`<div class="sec"><h3>Rank</h3><p class="note">${m.n} trophies. Your rank moves up by itself as you read books and earn trophies, and you can switch to any rank you have reached.</p><label class="note" style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input type="checkbox" id="rnT"${rnThemed()?' checked':''}> Use the rank names from my theme (otherwise everyone sees the same names)</label><div class="tlist">${rrows}</div></div>
   <div class="sec"><h3>Flair</h3><p class="note">${m.fe.length?'Earned from specific trophies, or given to you. Pick one to show next to your rank.':'Flair titles are earned from specific trophies. Your first one will appear here.'}</p><div class="tlist">${frows}</div></div>`;
 }
 function cardBox(){
@@ -2285,7 +2358,7 @@ function renderProfile(keep){
   const y=window.scrollY;
   $('#tools').innerHTML='';
   if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(stab())render()})}
-  $('#main').innerHTML=`${cardBox()}${favBox()}${titleLists()}${householdBox()}${themeBox()}${ownerBox()}`;
+  $('#main').innerHTML=`${cardBox()}${favBox()}${favtBox()}${titleLists()}${householdBox()}${themeBox()}${ownerBox()}`;
   refreshPreview();
   if(keep)window.scrollTo(0,y);
 }
@@ -2293,6 +2366,7 @@ document.addEventListener('input',e=>{if(e.target&&e.target.id==='favq')favFill(
 document.addEventListener('change',e=>{
   const t=e.target;if(!t||ui.tab!=='profile')return;
   if(t.id==='nick'||t.id==='hhColour'||t.id==='hhShow')setTimeout(refreshPreview,0);
+  if(t.id==='rnT'){db.flags.rn={v:t.checked?1:0,at:Date.now()};persistLocal();scheduleSync();dbVer++;TCACHE=null;render()}
 });
 
 /* ---------- Theme groups (add new theme ids to a group here) ---------- */
@@ -2367,6 +2441,9 @@ document.addEventListener('click',async e=>{
     case'titles':ui.tab='profile';render();window.scrollTo(0,0);break;
     case'favadd':favAdd(ds.id);break;
     case'favdel':favDel(ds.id);break;
+    case'ftadd':{const ids=favtIds();if(!ids.includes(ds.id)){if(ids.length<3)favtSave(ids.concat(ds.id));showTrophy(ds.id,ids.length>=3)}break}
+    case'ftdel':favtSave(favtIds().filter(x=>x!==ds.id));if(!$('#tdet').hidden)showTrophy(ds.id);break;
+    case'ftswap':favtSave(favtIds().map(x=>x===ds.old?ds.id:x));showTrophy(ds.id);break;
     case'gift':giveFlair();break;
     case'ungift':ungift(ds.e,ds.k);break;
     case'tclose':$('#tdet').hidden=true;break;
@@ -2405,7 +2482,7 @@ document.addEventListener('input',e=>{
   if(t.id==='q'){ui.q=t.value;ui.page=0;const p=t.selectionStart;renderLibraryList()}
   else if(t.id==='goal'){db.goals[new Date().getFullYear()]=+t.value||0;db.sync.goalsAt=Date.now();db.sync.dirty.goals=1;save()}
   else if(d&&t.dataset.f){const f=t.dataset.f;d[f]=f==='genres'?t.value.split(',').map(s=>s.trim()).filter(Boolean):(f==='cover'?t.value.trim():t.value)}
-  else if(d&&t.dataset.read!==undefined){d.reads[+t.dataset.read][t.dataset.k]=t.value}
+  else if(d&&t.dataset.read!==undefined){{const rr=d.reads[+t.dataset.read];rr[t.dataset.k]=t.value;delete rr.u}}
 });
 const PP=[10,20,50,100];
 function perPage(){let n=0;try{n=+localStorage.getItem('shelf.pp')}catch(_){}return PP.includes(n)?n:20}
