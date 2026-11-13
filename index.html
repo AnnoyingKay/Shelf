@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en-IE">
 <head>
+<!-- Shelf, made by Kay & Claude -->
+<meta name="author" content="Kay &amp; Claude">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Shelf</title>
@@ -699,6 +701,7 @@ html[data-theme=scifi] .tchip{border-radius:4px;text-transform:uppercase;letter-
 .hhinv{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid var(--line,#e6dcc6);border-radius:999px;font-size:12px;margin:2px 2px 0 0}
 .hhinv button{border:0;background:none;color:inherit;font-size:12px;cursor:pointer;padding:0}
 .mcards{display:grid;gap:8px;margin:6px 0 10px}
+/* Shelf styles by Kay & Claude */
 .mcard{display:flex;flex-direction:column;gap:2px;padding:10px 12px 10px 18px;border:2px solid;border-radius:12px;font-size:13px}
 .mcard b{font-size:15px}.mcard span{opacity:.85}
 
@@ -1024,6 +1027,7 @@ async function olSearch(q,lang){
   const j=await jget('https://openlibrary.org/search.json?'+q+'&limit=8'+(lang&&lang!=='any'&&L3[lang]?'&language='+L3[lang]:'')+'&fields=title,author_name,first_publish_year,number_of_pages_median,isbn,cover_i,subject');
   return(j.docs||[]).map(x=>({title:x.title,author:(x.author_name||[]).join(', '),year:x.first_publish_year,pages:x.number_of_pages_median,isbn:(x.isbn||[]).find(i=>i.length===13)||(x.isbn||[])[0]||'',cover:x.cover_i?`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg`:'',subjects:shortSub(x.subject)}));
 }
+/* Shelf by Kay and Claude, https://annoyingkay.github.io/Shelf/ */
 async function lookup(auto){
   const isbn=(d.isbn||'').replace(/[^0-9Xx]/g,'');
   if(!isbn&&!d.title.trim()){lookupMsg='Enter a title or ISBN first.';drawForm();return}
@@ -1309,97 +1313,54 @@ const goalYears=c=>Object.keys(db.goals||{}).filter(y=>+db.goals[y]>0).map(y=>({
 const monthSum=(c,y,ms)=>ms.reduce((s,m)=>s+(c.M[y+'-'+String(m).padStart(2,'0')]||0),0);
 
 /* ----- the catalogue ----- */
-const L_=(id,n,g,t,u,q,v)=>({id,n,k:'L',g,t,u,q,v});
 const O_=(id,n,g,d,q,v,t)=>({id,n,k:'O',g,t:t||[1],d,q,v});
 const T_=(id,n,g,d,q,v,t,u)=>({id,n,k:'T',g,t:t||[1],d,u,q,v});
 const H_=(id,n,g,d,q,v)=>({id,n,k:'H',g,t:[1],d,q,v});
 const D_=(id,n,g,h,label,q)=>({id,n,k:'D',g,t:[1,2,3],d:['Start or finish a book on '+label,'Start and finish a book during '+label,'Do it in three different years'],q,v:holV(h)});
 const maxMon=(c,f)=>Math.max(0,...Object.values(c.M).map(f?f:x=>x));
-const TR=[
- L_('reg','Shelf Builder','library',[10,50,250,1000,2500],'books registered','A shelf is a promise you make to the floor.',c=>c.reg),
- L_('fin','Bookworm','book',[10,50,100,500,1000],'books finished','Some people count sheep. You count endings.',c=>c.fin),
- L_('pages','Page Count','file-text',[5000,25000,100000,250000,500000],'pages read','Somewhere, a forest is quietly keeping score.',c=>c.pages),
- L_('fe','Pixel Pages','device-tablet',[5,25,100],'ebooks finished','Reads in the dark, glows in your hand.',c=>c.cat.e),
- L_('fa','Good Listener','headphones',[5,25,100],'audiobooks finished','Hands busy, ears booked.',c=>c.cat.a),
- L_('fc','Panel Hopper','message-2',[5,25,100],'comics, manga and graphic novels finished','Pictures: faster than words, usually.',c=>c.cat.c),
- L_('fp','Paper Trail','book-2',[5,25,100],'printed books finished','It smells better and never asks to charge.',c=>c.cat.p),
- L_('rated','Fair Critic','star',[10,50,100],'books rated','Opinions, now measured to the half star.',c=>c.rated),
- L_('rev','Pen Pal','pencil',[5,25,100],'reviews written','Proof you had thoughts, in writing.',c=>c.reviews),
- L_('ser','Series Finale','link',[1,5,10],'series completed','Closure, in several volumes.',c=>c.sc),
- L_('tags','Wide Reader','leaf',[5,10,20],'different tags read','Variety is the spice of the shelf.',c=>c.tags),
- L_('auth','Cast of Characters','users',[10,25,50],'different authors read','A different voice for every mood.',c=>c.authors),
- L_('reread','Second Helping','repeat',[1,5,10],'books re-read','Same book, different you.',c=>c.reread),
- L_('notes','Margin Notes','writing',[10,50],'books with notes','Scribbling, but with a purpose.',c=>c.notes),
- L_('streak','Monthly Habit','flame',[3,6,12,24],'months in a row with a finish','Consistency: the rarest genre.',c=>c.streak),
- L_('meta','Trophy Hoarder','trophy',[10,25,50,75],'trophies earned','Collecting the collection.',()=>0),
-
- O_('first','First Shelf','bookmark','Add your first book','Every library starts with one book and a bad idea about space.',c=>c.reg>0?1:0),
- O_('open','Open Book','book','Finish your first book','One down. The rest of the pile is listening.',c=>c.fin>0?1:0),
- O_('cover','Cover Story','photo','Add a cover from your own photo','Judged by its cover, and passed.',c=>c.V.some(v=>(v.b.cover||'').startsWith('data:'))?1:0),
- O_('scan','Barcode Hunter','barcode','Scan a barcode','Beep. The book surrenders.',c=>c.flag('scan')?1:0),
- O_('gr','Moving In','file-import','Import your Goodreads library','Boxes unpacked, books alphabetised in spirit.',c=>c.flag('gr')?1:0),
- O_('cloud','Cloud Nine','cloud','Turn on sync','Your books now have air miles.',c=>c.flag('cloud')?1:0),
- O_('exp','Safe and Sound','device-floppy','Export a backup','Belt, braces and a file.',c=>c.flag('exp')?1:0),
- O_('ward','Wardrobe','palette','Try six different themes','Same books, six outfits.',c=>c.themes>=6?1:0),
- O_('sit','One Sitting','hourglass','Start and finish a book on the same day','Dinner was optional.',c=>c.E.some(e=>e.s&&e.s===e.e)?1:0),
- O_('door','Doorstopper','weight','Finish a book of 800 pages or more','Also useful in a power cut.',c=>c.F.some(v=>+v.b.pages>=800)?1:0),
- O_('quick','Quick Read','bolt','Finish a book under 100 pages','Short, sweet, and over before the kettle.',c=>c.F.some(v=>+v.b.pages>0&&+v.b.pages<100)?1:0),
- O_('slow','Slow Burn','clock','Take 90 days or more to finish a book','Some books must be sipped.',c=>c.E.some(e=>e.s&&e.e&&dn(e.s,e.e)>=90)?1:0),
- O_('back','Comeback','arrow-back-up','Finish a book a year after starting it','It waited patiently. Books do that.',c=>c.E.some(e=>e.s&&e.e&&dn(e.s,e.e)>=365)?1:0),
- O_('hat','Hat Trick','number-3','Finish 3 books in one month','Three is a pattern.',c=>maxMon(c)>=3?1:0),
- O_('binge','Binge Month','flame','Finish 5 books in one month','The laundry can wait.',c=>maxMon(c)>=5?1:0),
- O_('unput','Unputdownable','eye','Finish 400+ pages within 3 days','The book won. You allowed it.',c=>c.E.some(e=>e.s&&e.e&&+e.b.pages>=400&&dn(e.s,e.e)<=2)?1:0),
- O_('fluent','Format Fluent','world','Finish an ebook, an audiobook, a comic and a printed book in one year','Eyes, ears, thumbs and paper.',c=>{const y={};c.E.forEach(e=>{if(!e.e)return;const k=CAT(e.b.format);if(k)(y[e.e.slice(0,4)]=y[e.e.slice(0,4)]||new Set()).add(k)});return Object.values(y).some(s=>s.size>=4)?1:0}),
- O_('five','Five Stars','star','Give a book 5 stars','Rare, like a quiet commute.',c=>c.V.some(v=>v.b.rating>=5)?1:0),
- O_('critic','Honest Critic','thumb-down','Rate a book 2 stars or lower and say why','Politely devastating.',c=>c.V.some(v=>v.b.rating>0&&v.b.rating<=2&&(v.b.review||'').trim())?1:0),
- O_('dnf',"Life's Too Short",'scissors','Mark a book as did not finish','Quitting is a form of editing.',c=>c.V.some(v=>v.st==='dnf')?1:0),
- O_('tri','Trilogy','books','Finish books 1, 2 and 3 of a series','Third time lucky, and also first and second.',c=>c.tri>0?1:0),
- O_('fan','Fan Club','heart','Finish 5 books by one author','At this point, send them a card.',c=>{const m={};c.F.forEach(v=>{const a=(v.b.author||'').trim().toLowerCase();if(a)m[a]=(m[a]||0)+1});return Math.max(0,...Object.values(m))>=5?1:0}),
- O_('tidy','Tidy Shelf','checklist','Have 25 books with pages and tags filled in','The spreadsheet in you approves.',c=>c.V.filter(v=>+v.b.pages>0&&(v.b.genres||[]).length).length>=25?1:0),
- O_('mount','TBR Mountain','mountain','Have 25 books on your want to read list','Base camp established.',c=>c.V.filter(v=>v.st==='want').length,[25]),
- O_('tamer','TBR Tamer','target','Finish 10 books that waited 6 months or more','They waited. You delivered.',c=>c.F.filter(v=>{const e=v.rs.filter(r=>!r.u).map(r=>r.end).filter(Boolean).sort().pop();return e&&v.b.added&&dn(v.b.added,e)>=183}).length,[10]),
- O_('ends','Bookends','layout-columns','Finish a book in the first and the last week of a year','Opened the year with a book and closed it with another.',c=>{const y={};Object.keys(c.D).forEach(d=>{const o=y[d.slice(0,4)]=y[d.slice(0,4)]||{a:0,b:0};if(d.slice(5)<='01-07')o.a=1;if(d.slice(5)>='12-25')o.b=1});return Object.values(y).some(o=>o.a&&o.b)?1:0}),
-
- T_('goal','Goal Getter','target','Reach your yearly reading goal','Promised, planned, done.',c=>goalYears(c).filter(x=>x.n>=x.g).length,[1,3,5],'yearly goals reached'),
- T_('early','Ahead of Schedule','calendar-check','Reach your yearly goal before 1 December','Early, which is almost suspicious.',c=>goalYears(c).some(x=>{if(x.n<x.g)return false;const ends=Object.keys(c.D).filter(d=>d.slice(0,4)===x.y).flatMap(d=>Array(c.D[d]).fill(d)).sort();return ends[x.g-1]<x.y+'-12-01'})?1:0),
- T_('over','Overachiever','rocket','Finish 150% of your yearly goal','The goal was merely a suggestion.',c=>goalYears(c).some(x=>x.n>=x.g*1.5)?1:0),
- T_('b2b','Back to Back','award','Reach your goal two years in a row','Twice is a habit.',c=>{const ok=new Set(goalYears(c).filter(x=>x.n>=x.g).map(x=>+x.y));return [...ok].some(y=>ok.has(y+1))?1:0}),
- T_('fourq','Four Quarters','calendar-event','Finish 3 or more books in every quarter of a year','Steady as a clock.',c=>{const ys=new Set(Object.keys(c.Q).map(k=>k.slice(0,4)));return [...ys].some(y=>[1,2,3,4].every(q=>(c.Q[y+'-Q'+q]||0)>=3))?1:0}),
- T_('bestq','Quarter Champion','medal','Finish more books in a quarter than ever before','Your finest three months, on record.',c=>Math.max(0,...Object.values(c.Q)),[3,5,8,12],'books in your best quarter'),
- T_('summer','Summer Reader','sun','Finish 5 books between June and August','Sun cream and spines.',c=>{const ys=new Set(Object.keys(c.M).map(k=>k.slice(0,4)));return [...ys].some(y=>monthSum(c,y,[6,7,8])>=5)?1:0}),
- T_('winter','Winter Warmer','snowflake','Finish 5 books between December and February','Blanket, tea, chapter.',c=>{const ys=new Set(Object.keys(c.M).map(k=>+k.slice(0,4)));return [...ys].some(y=>monthSum(c,y,[12])+monthSum(c,y+1,[1,2])>=5)?1:0}),
-
- H_('round','Round Number','number-0','Lifetime pages land exactly on a multiple of 10,000','Exactly. Suspiciously exact.',c=>{let cum=0;const ev=c.E.slice().sort((a,b)=>a.e.localeCompare(b.e));for(const e of ev){cum+=+e.b.pages||0;if(cum>0&&cum%10000===0)return 1}return 0}),
- H_('triple','Triple Threat','confetti','Finish 3 books on one day','Efficiency, or showing off.',c=>Math.max(0,...Object.values(c.D))>=3?1:0),
- H_('pal','Palindrome','arrows-left-right','Finish a book with a palindromic page count','Reads the same backwards, like a good ending.',c=>c.F.some(v=>{const p=String(v.b.pages||'');return p.length>=3&&p===[...p].reverse().join('')})?1:0),
- H_('mirror','Mirror Date','hash','Finish a book on a palindromic date','A date worth reading twice.',c=>Object.keys(c.D).some(d=>{const s=d.replace(/-/g,'');return s===[...s].reverse().join('')})?1:0),
- H_('lucky','Lucky Seven','number-7','Give 7 books 5 stars','Fortune favours the well read.',c=>c.V.filter(v=>v.b.rating>=5).length>=7?1:0),
- H_('ans','The Answer','bulb','Finish a book of exactly 42 pages','Not the question, but still.',c=>c.F.some(v=>+v.b.pages===42)?1:0),
-
- D_('nye','Last Page of the Year','sparkles',{fx:['12-31']},"New Year's Eve",'Out with the old, in with the next chapter.'),
+/* ranks run on books finished with a finish date. Newcomer is the start, then 15 steps. */
+const RK=[0,1,10,20,30,45,60,80,100,125,150,190,240,300,380,500];
+/* one milestone trophy for each rank after the first, drawn with that rank's insignia */
+const MILE=[
+ ['The First One','One down. The rest of the pile is listening.'],
+ ['Double Digits','Ten books, and nobody had to ask.'],
+ ['Twenty Deep','The shelf has started to lean.'],
+ ['Thirty Strong','A fair few endings behind you.'],
+ ['Forty-Five','Most of a library, read properly.'],
+ ['Sixty','Five a month, near enough, for a year.'],
+ ['Eighty','The commute thanks you.'],
+ ['Century','A hundred books, not out.'],
+ ['One Twenty-Five','Still going, and no sign of tiring.'],
+ ['One Fifty','Well past the point of casual.'],
+ ['One Ninety','Almost two hundred. Do not stop for the sake of a round number.'],
+ ['Two Forty','The shelf is a personality now.'],
+ ['Three Hundred','This is a habit, and a good one.'],
+ ['Three Eighty','Nearly five hundred, and every one finished.'],
+ ['Five Hundred','Half a thousand. The book in your hand is next.']
+];
+const TR=[];
+MILE.forEach((m,k)=>{const n=RK[k+1];TR.push({id:'m'+n,n:m[0],k:'M',ri:k+1,g:'',t:[n],d:n===1?'Finish your first book, with a finish date':'Finish '+n+' books, with a finish date',q:m[1],v:c=>c.fin})});
+TR.push(
+ O_('q10','Ten in a Quarter','calendar-event','Finish 10 books in one quarter','A book every nine days or so.',c=>Math.max(0,...Object.values(c.Q))>=10?1:0),
+ O_('binge','Five in a Month','flame','Finish 5 books in one month','The laundry can wait.',c=>maxMon(c)>=5?1:0),
+ T_('year','Year in Books','calendar-event','Finish books in one year','A whole year, in order.',c=>Math.max(0,...Object.values(c.Y)),[12,26,52,100],'books in a year'),
+ O_('goal','Goal Getter','target','Reach your yearly reading goal','Promised, planned, done.',c=>goalYears(c).some(x=>x.n>=x.g)?1:0)
+);
+const HOLS=[
  D_('nyd','Fresh Start','sunrise',{fx:['01-01']},"New Year's Day",'A clean page, and you wasted no time.'),
  D_('reyes','Three Kings','crown',{fx:['01-06']},"Three Kings' Day (6 January)",'Gold, frankincense and a very long paperback.'),
  D_('val','Date with a Book','heart',{fx:['02-14']},"Valentine's Day",'A date with no small talk.'),
- D_('leap','Leap Day','arrow-bounce',{fx:['02-29']},'29 February','A day that barely exists, spent well.'),
- D_('pi','Pi Day','math-pi',{fx:['03-14']},'Pi Day (14 March)','Irrational, endless, and easy to get lost in.'),
  D_('pat',"St Patrick's Day",'clover',{fx:['03-17']},"St Patrick's Day",'Sláinte, and turn the page.'),
  D_('easter','Easter Egg','egg',{tb:'easter'},'Easter Sunday','The best finds are hidden between chapters.'),
  D_('dia','Día del Libro','book-2',{fx:['04-23']},'Book Day (23 April)','A rose for someone, a book for you.'),
- D_('sw','May the Fourth','planet',{fx:['05-04']},'4 May','May the Fourth be with your bookmark.'),
  D_('bloom','Bloomsday','eyeglass',{fx:['06-16']},'Bloomsday (16 June)','Dublin, one day, one very long book.'),
  D_('bday',"Creator's Birthday",'cake',{fx:['06-19']},"the creator's birthday (19 June)",'The creator of this app is a year older today. Cake is optional, reading is not.'),
- D_('mids','Longest Day','flare',{fx:['06-20','06-21']},'midsummer (20 or 21 June)','Daylight to burn and pages to turn.'),
  D_('hallo','Spooky Chapter','pumpkin-scary',{fx:['10-31']},'Halloween','The scariest thing here is your to read pile.'),
- D_('diw','Festival of Lights','lamp',{tb:'diw'},'Diwali','Light a lamp, open a book.'),
- D_('eid','Eid Mubarak','moon-stars',{tb:'eid'},'Eid (al-Fitr or al-Adha)','Feast first, chapter after.'),
- D_('han','Eight Nights','candle',{tb:'han'},'Hanukkah (any of the eight nights)','Eight nights, plenty of reading light.'),
- D_('ves','Quiet Mind','flower',{tb:'ves'},'Vesak','A still mind and an open book.'),
- D_('cny','Lunar New Year','gift',{tb:'cny'},'Lunar New Year','Red envelope, one new book.'),
  D_('xe','Christmas Eve','star',{fx:['12-24']},'Christmas Eve','The night before, with a book instead of a stocking.'),
  D_('xm','Christmas Day','christmas-tree',{fx:['12-25']},'Christmas Day','Ho ho hold on, one more chapter.'),
- D_('mw','Longest Night','snowflake',{fx:['12-21','12-22']},'midwinter (21 or 22 December)','The longest night deserves the longest book.'),
- D_('f13','Friday the 13th','cat',{fri13:1},'Friday the 13th','Bad luck is a book you never opened.')
+ D_('nye','Last Page of the Year','sparkles',{fx:['12-31']},"New Year's Eve",'Out with the old, in with the next chapter.')
 ];
+HOLS.forEach(h=>TR.push(h));
 const nrm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 const RARE=[
  ['babel','Babel-17','Samuel R. Delany','delany',['babel 17'],'r_babel','Careful what you learn to say.'],
@@ -1447,17 +1408,16 @@ const FAV=[
  ['hitch','The Hitchhiker’s Guide to the Galaxy','Douglas Adams','adams',['hitchhiker s guide','hitchhikers guide','autoestopista galactico'],'f_hitch','Towel packed. Panic cancelled.'],
  ['patria','Patria','Fernando Aramburu','aramburu',['patria'],'f_patria','Two families, one village, and the long silence.']
 ];
-FAV.forEach(r=>TR.push({id:'f_'+r[0],n:r[1],k:'F',g:r[5],t:[1],d:`Finish ${r[1]} by ${r[2]}`,q:r[6],v:c=>rareHit(c,r)?1:0}));
+FAV.forEach(r=>TR.push({id:'f_'+r[0],n:r[0]==='miser'?'Planning a Revolution, es-tu?':r[1],k:'F',g:r[5],t:[1],d:`Finish ${r[1]} by ${r[2]}`,q:r[6],v:c=>rareHit(c,r)?1:0}));
 TR.push({id:'favs',n:'Own Shelf',k:'H',g:'heart',t:[3,7,13],u:'of Kay’s Favourites finished',q:'Your own shelf, and it shows.',v:c=>FAV.filter(r=>rareHit(c,r)).length});
-const START=['scan','cloud','exp','ward'];
+const START=[];
 const TBY=Object.fromEntries(TR.map(t=>[t.id,t]));
 const lvlOf=(t,v)=>t.t.filter(x=>v>=x).length;
 const metalIdx=(t,l)=>MAPM[t.t.length][Math.max(1,l)-1];
 
 function levelsNow(){
   const c=mkCtx(null),lvl={},val={};let n=0;
-  TR.forEach(t=>{if(t.id==='meta')return;const v=t.v(c);val[t.id]=v;lvl[t.id]=lvlOf(t,v);if(lvl[t.id]>0)n++});
-  val.meta=n;lvl.meta=lvlOf(TBY.meta,n);
+  TR.forEach(t=>{const v=t.v(c);val[t.id]=v;lvl[t.id]=lvlOf(t,v);if(lvl[t.id]>0)n++});
   return{lvl,val,c};
 }
 function candDates(){
@@ -1468,6 +1428,7 @@ function candDates(){
   return a;
 }
 let TCACHE=null;
+/* Authors: Kay (design, ideas) and Claude (code). */
 function trophyState(){
   if(TCACHE&&TCACHE.ver===dbVer)return TCACHE;
   const now=levelsNow(),dates=candDates(),memo=new Map();
@@ -1475,18 +1436,14 @@ function trophyState(){
   const items=[];
   TR.forEach(t=>{
     const lvl=now.lvl[t.id],when=[];
-    if(t.id!=='meta'&&lvl>0&&dates.length){
+    if(lvl>0&&dates.length){
       for(let L=1;L<=lvl;L++){let lo=0,hi=dates.length-1,ans=-1;while(lo<=hi){const m=(lo+hi)>>1;if(lvlOf(t,t.v(ctxAt(m)))>=L){ans=m;hi=m-1}else lo=m+1}when.push(ans>=0?dates[ans]:'')}
     }
     items.push({t,lvl,val:now.val[t.id],when});
   });
   {const tb=(db.flags&&db.flags.tbest)||{};items.forEach(x=>{const f=tb[x.t.id]|0;if(f>x.lvl)x.lvl=f})}
-  const meta=items.find(x=>x.t.id==='meta'),firsts=items.filter(x=>x.t.id!=='meta'&&x.lvl>0).map(x=>x.when[0]||today()).sort();
-  for(let L=1;L<=meta.lvl;L++)meta.when.push(firsts[meta.t.t[L-1]-1]||'');
-  const c=now.c,seasons=[];
-  Object.keys(c.Y).sort().reverse().forEach(y=>{const l=[6,12,24,52].filter(x=>c.Y[y]>=x).length;if(l)seasons.push({id:'y'+y,n:y,k:'T',g:'calendar-event',t:[6,12,24,52],lvl:l,val:c.Y[y],sub:c.Y[y]+' books'})});
-  Object.keys(c.Q).sort().reverse().slice(0,12).forEach(q=>{const l=[3,5,8,12].filter(x=>c.Q[q]>=x).length;if(l)seasons.push({id:'q'+q,n:q.slice(5)+' '+q.slice(0,4),k:'L',g:'calendar-event',t:[3,5,8,12],lvl:l,val:c.Q[q],sub:c.Q[q]+' books'})});
-  return TCACHE={ver:dbVer,items,seasons,by:Object.fromEntries(items.map(x=>[x.t.id,x]))};
+  const c=now.c;
+  return TCACHE={ver:dbVer,items,fin:c.fin,Y:c.Y,by:Object.fromEntries(items.map(x=>[x.t.id,x]))};
 }
 
 /* ----- drawing ----- */
@@ -1515,11 +1472,11 @@ const SK={
 };
 const pk=(x,i)=>Array.isArray(x)?x[i]:x;
 function trophySVG(t,lvl,o){
-  o=o||{};const K=SK[theme]||SK.nook,m=metalIdx(t,lvl||1);
+  o=o||{};const K=SK[theme]||SK.nook,m=t.k==='M'?RMET[t.ri]:metalIdx(t,lvl||1);
   const f=pk(K.f,m),s=pk(K.s,m),a=K.a||s,r=K.r,w=K.w;
   const st=`fill="${f}" stroke="${s}" stroke-width="${w}" stroke-linejoin="round"`,thin=`fill="none" stroke="${s}" stroke-width=".75"`;
   let b='',gx=0,gy=0,gk=1;
-  if(t.k==='L'){
+  if(t.k==='L'||t.k==='M'){
     gy=6;
     if(K.body==='cat'){
       b=`<path d="M-22 -6L-21 -27L-6 -15Z" ${st}/><path d="M22 -6L21 -27L6 -15Z" ${st}/><circle cy="6" r="25" ${st}/><circle cy="6" r="19" ${thin}/>`;
@@ -1556,7 +1513,7 @@ function trophySVG(t,lvl,o){
     const pts=[[20,0],[14.1,14.1],[0,20],[-14.1,14.1],[-20,0],[-14.1,-14.1],[0,-20],[14.1,-14.1]];
     b=`<path d="M-10 14L-16 42L-8 37L-3 44L2 16Z" fill="${r}"/><path d="M10 14L16 42L8 37L3 44L-2 16Z" fill="${r}"/><g ${st}>${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="8"/>`).join('')}</g><circle r="19" fill="${f}"/><circle r="14" ${thin}/>`;
   }
-  const g=`<g transform="translate(${gx},${gy}) scale(${gk}) translate(-12,-12)" fill="none" stroke="${a}" stroke-width="${w>=3?2.4:2}" stroke-linecap="round" stroke-linejoin="round">${GL[t.g]||''}</g>`;
+  const g=t.k==='M'?`<g transform="translate(-15 -8.5) scale(.62)">${rankSVG(t.ri,0,1)}</g>`:`<g transform="translate(${gx},${gy}) scale(${gk}) translate(-12,-12)" fill="none" stroke="${a}" stroke-width="${w>=3?2.4:2}" stroke-linecap="round" stroke-linejoin="round">${GL[t.g]||''}</g>`;
   return `<svg class="tsvg${lvl?'':' tlock'}" viewBox="-34 -42 68 90" width="${o.w||56}" height="${Math.round((o.w||56)*90/68)}" role="img" aria-label="${esc(t.n)}">${b}${g}</svg>`;
 }
 
@@ -1575,19 +1532,13 @@ function renderTrophies(){
   const earned=S.items.filter(x=>x.lvl>0),medals=earned.reduce((n,x)=>n+x.lvl,0);
   const sec=(title,list,note)=>list.length?`<div class="sec"><h3>${title}</h3><div class="tgrid">${list.map(x=>tcell(x,fresh.has(x.t.id))).join('')}</div>${note?`<p class="note">${note}</p>`:''}</div>`:'';
   const kind=k=>S.items.filter(x=>x.t.k===k);
-  const hid=kind('H'),hol=kind('D');
+  const hid=kind('H'),hol=kind('D'),mil=kind('M'),vol=kind('O').concat(kind('T'));
   const hidE=hid.filter(x=>x.lvl),holE=hol.filter(x=>x.lvl),rar=kind('R'),rarE=rar.filter(x=>x.lvl),fav=kind('F'),favE=fav.filter(x=>x.lvl);
-  const seen_=x=>x.lvl>0||(x.t.k==='L'&&x.val>0);
-  const start=S.items.filter(x=>START.includes(x.t.id));
-  const ey=S.seasons.filter(x=>x.t.length===4&&x.k==='T'),eq=S.seasons.filter(x=>x.k==='L');
-  const sc=x=>`<div class="tcell"><span class="tsvgw">${trophySVG(x,x.lvl,{w:52})}</span><b>${esc(x.n)}</b><small>${MET[metalIdx(x,x.lvl)]} · ${x.sub}</small></div>`;
+  const shown=(l,all)=>all?l:l.filter(x=>x.lvl>0||x.val>0);
   titleTick();
-  $('#main').innerHTML=`${titleCard()}<div class="sec tsum"><div class="stat"><div><b>${earned.length}</b><span>trophies earned</span></div><div><b>${medals}</b><span>medals collected</span></div></div>${rankBar(S)}</div>
-  ${sec('Getting started',start,'Four easy ones to find your way around the app.')}
-  ${sec('Milestones',kind('L').filter(seen_),'A milestone appears as soon as you start working towards it.')}
-  ${sec('Achievements',kind('O').filter(x=>x.lvl&&!START.includes(x.t.id)))}
-  ${sec('Goals and seasons',kind('T').filter(x=>x.lvl))}
-  ${S.seasons.length?`<div class="sec"><h3>Years and quarters</h3><div class="tgrid">${ey.concat(eq).map(sc).join('')}</div><p class="note">Yearly cups need 6, 12, 24 or 52 books. Quarterly medals need 3, 5, 8 or 12.</p></div>`:''}
+  $('#main').innerHTML=`${titleCard()}<div class="sec tsum"><div class="stat"><div><b>${earned.length}</b><span>trophies earned</span></div><div><b>${S.fin}</b><span>books finished</span></div></div>${rankBar(S)}</div>
+  ${sec('Milestones',mil,'One for each rank. Finish a book with a finish date to count.')}
+  ${sec('Reading',vol,'Reading volume. Only books with a finish date count.')}
   ${sec('Holidays and festivals',holE,'Each holiday trophy has three levels: read on the day, start and finish within it, and do it in three different years.')}
   ${sec('Hidden',hidE)}
   ${sec('Kay’s Favourites',favE,'The books that mean the most. Finish one to unlock its heart.')}
@@ -1613,7 +1564,7 @@ function stripInner(){
 function fillStrip(){const el=$('#tstrip');if(!el||!TCACHE||TCACHE.ver!==dbVer)return;el.className='tstrip';el.innerHTML=stripInner();titleTick();refreshChips()}
 function showTrophy(id,choose){
   const S=trophyState(),x=S.by[id];if(!x)return;const t=x.t,multi=t.t.length>1;
-  const hidden=!x.lvl&&!(t.k==='L'&&x.val>0)&&!START.includes(t.id);if(hidden)return;
+  const hidden=!x.lvl&&t.k!=='M'&&t.k!=='O'&&t.k!=='T';if(hidden)return;
   const descOf=i=>Array.isArray(t.d)?t.d[i]:(t.u?`${fmtN(t.t[i])} ${t.u}`:t.d);
   const rows=t.t.map((th,i)=>`<div><i style="background:${MDOT[metalIdx(t,i+1)]};opacity:${i<x.lvl?1:.35}"></i><span style="flex:1">${multi?`<b>${MET[metalIdx(t,i+1)]}</b> · `:''}${esc(descOf(i))}</span><span class="note">${i<x.lvl?(x.when[i]?fmtDate(x.when[i]):'Earned'):(multi||th>1?'Locked':'')}</span></div>`).join('');
   const head=x.lvl?(multi?`${MET[metalIdx(t,x.lvl)]} level`:'Earned'):'Not yet earned';
@@ -1626,6 +1577,7 @@ const why=it=>{const t=it.t,i=Math.max(0,it.lvl-1);
   if(t.u&&t.t[i]!=null)return `You reached ${fmtN(t.t[i])} ${t.u}.`;
   return (t.d||'')+(t.d&&!/[.!?]$/.test(t.d)?'.':'')};
 let tqueue=[];
+/* Shelf (Kay & Claude). Copying without credit is not on. */
 function celebrate(list){
   list.forEach(it=>{try{notify('tr:'+it.t.id+':'+it.lvl,'Trophy earned: '+it.t.n+'. '+why(it),'🏆')}catch(e){}});
   tqueue=list.slice();popNext();
@@ -1641,7 +1593,7 @@ function setFlag(k){if(!db.flags[k]){db.flags[k]=today();save()}}
 function noteTheme(id){db.flags.themes=db.flags.themes||{};if(!db.flags.themes[id]){db.flags.themes[id]=today();save()}}
 
 /* ----- titles: a rank (by trophies earned) and an optional flair (from a specific trophy) ----- */
-const RK=[0,12,75,150,250,400,600,900,1250,1700,2300,3100,4100,5250,6750,8500]; /* ranks run on hidden points, not trophy counts */
+/* ranks: see RK above, they run on books finished with a finish date */
 const RANKS={
  nook:['Newcomer','Browser','Regular','Page Turner','Bookmarker','Shelf Keeper','Avid Reader','Bookworm','Bibliophile','Collector','Archivist','Curator','Librarian','Head Librarian','Grand Librarian','Legend'],
  cat:['Kitten','Curious Kit','Cushion Warmer','Lap Sitter','Sunbeam Seeker','Purr Reader','Shelf Prowler','Nap Scholar','Whisker Wise','Library Cat','Senior Mouser','Cat Scholar','Head Cat','Grand Tabby','Nine Lives','Legendary Cat'],
@@ -1664,39 +1616,22 @@ const RANKS={
  valentine:['Admirer','Pen Pal','Note Passer','Poet','Flower Giver','Chocolate Sharer','Letter Writer','Serenader','Sweetheart','Romantic','Heartthrob','Cupid’s Friend','Lovebird','Grand Romantic','Soulmate','Legend of Love'],
  patrick:['Shamrock Spotter','Clover Finder','Wee Reader','Tin Whistler','Storyteller','Piper','Seanchaí','Bard','Rainbow Chaser','Leprechaun’s Friend','Pot of Gold Keeper','Lucky Reader','Green Sage','Master Bard','High Seanchaí','Legend of the Emerald Isle']
 };
-/* flair: [key, title, trophy id, level needed] */
+/* flair: [key, title, trophy id, level needed]. Each one comes from a trophy that still exists. */
 const FLAIR=[
- ['door','The Heavyweight','door',1],['quick','Speed Reader','quick',1],['sit','One-Sitting Wonder','sit',1],['slow','Slow Burner','slow',1],['back','The Long Game','back',1],
- ['hat','Hat-Trick Hero','hat',1],['binge','The Binger','binge',1],['unput','Can’t Look Away','unput',1],['fluent','Format Fluent','fluent',1],
- ['critic','The Honest Critic','critic',1],['dnf','Proud Quitter','dnf',1],['five','Five-Star Giver','five',1],['lucky','The Generous','lucky',1],
- ['reread','Repeat Offender','reread',1],['ser','Completionist','ser',2],['tri','Trilogist','tri',1],['fan','Loyal Fan','fan',1],['streak','Clockwork','streak',3],
- ['cent','Centurion','fin',3],['thou','Thousand Club','fin',5],['wall','Wall of Words','pages',3],['bfly','Social Butterfly','auth',3],['hop','Genre Hopper','tags',3],
- ['goal','On Target','goal',1],['over','Overachiever','over',1],['b2b','Back-to-Back','b2b',1],['early','Early Bird','early',1],['qm','Quarter Master','fourq',1],
- ['sun','Sun Reader','summer',1],['blanket','Blanket Reader','winter',1],['mount','Mountaineer','mount',1],['slay','Pile Slayer','tamer',1],
- ['px','Pixel Pusher','fe',2],['ear','Earworm','fa',2],['panel','Panel Master','fc',2],['paper','Paper Purist','fp',2],
+ ['binge','The Binger','binge',1],['goal','On Target','goal',1],['q10','Ten a Quarter','q10',1],
+ ['y12','A Book a Month','year',1],['y26','Fortnightly','year',2],['y52','A Book a Week','year',3],['y100','Hundred a Year','year',4],
+ ['first','Finisher','m1',1],['dd','Double Digits','m10',1],['cent','Centurion','m100',1],['half','Half a Thousand','m500',1],
  ['hunt','Treasure Hunter','gems',1],['odd','Curator of Oddities','gems',3],['kin','Kindred Spirit','favs',1],['twin','Kay’s Twin','favs',3],
- ['hoard1','Trophy Hunter','meta',1],['hoard4','Dragon on the Hoard','meta',4],
- ['hatter','The Mad Hatter','bday',1],['lucky17','Lucky Reader','pat',1],['spook','Spooky Reader','hallo',1],['fire','Fireside Reader','xm',1],['egg','Egg Hunter','easter',1],['rom','Hopeless Romantic','val',1],['f13','Unlucky Charm','f13',1],
- ['exact','Exactly Right','round',1],['trip','Triple Threat','triple',1],['pali','Palindromist','pal',1],['date','Date Whisperer','mirror',1],['fortytwo','Forty-Two','ans',1]
+ ['hatter','The Mad Hatter','bday',1],['lucky17','Lucky Reader','pat',1],['spook','Spooky Reader','hallo',1],['fire','Fireside Reader','xm',1],['egg','Egg Hunter','easter',1],['rom','Hopeless Romantic','val',1]
 ].map(a=>({k:a[0],n:a[1],id:a[2],l:a[3],ok:S=>((S.by[a[2]]||{}).lvl||0)>=a[3]}));
 FLAIR.push({k:'creator',n:'The Creator',id:'',l:0,gift:1,ok:()=>false});
 FLAIR.push({k:'fest',n:'Festive',id:'',l:0,sub:'5 holiday trophies',ok:S=>S.items.filter(x=>x.t.k==='D'&&x.lvl>0).length>=5});
-FLAIR.push({k:'cal',n:'Calendar Keeper',id:'',l:0,sub:'12 holiday trophies',ok:S=>S.items.filter(x=>x.t.k==='D'&&x.lvl>0).length>=12});
+FLAIR.push({k:'cal',n:'Calendar Keeper',id:'',l:0,sub:'all 12 holiday trophies',ok:S=>S.items.filter(x=>x.t.k==='D'&&x.lvl>0).length>=12});
 const earnedN=S=>S.items.filter(x=>x.lvl>0).length;
 const rnThemed=()=>{const x=db.flags&&db.flags.rn;return!!(x&&x.v)};
 const rankNames=()=>rnThemed()?(RANKS[theme]||RANKS.nook):RANKS.nook; /* one set of rank names for everyone, unless you opt in to the theme's */
-const trophyPts=(t,l)=>{let s=0;for(let i=1;i<=l;i++)s+=t.k==='L'?5*i:t.k==='T'?6*i:t.k==='D'?8*i:t.k==='H'?10*i:(t.k==='R'||t.k==='F')?20:6;return s};
-function pointsOf(S){
-  if(S.pts!=null)return S.pts;
-  let p=0,lg=0;
-  S.items.forEach(x=>{if(x.lvl>0)p+=trophyPts(x.t,x.lvl)});
-  /* only a dated finish scores as a read; logging a book (to read, reading, did not finish, undated finish) is worth one point, with no cap */
-  myBooks().forEach(b=>{if(b.rep)return;const ends=(b.reads||[]).filter(r=>r.end&&!r.u).length;
-    if(ends>0)p+=5+2*Math.min(ends-1,2);
-    else lg++});
-  return S.pts=p+lg;
-}
-const rankIdx=S=>{const n=pointsOf(S);let r=0;RK.forEach((x,i)=>{if(n>=x)r=i});const lv=id=>(S.by[id]&&S.by[id].lvl)||0;if(!lv('open'))r=0;else if(!lv('fin'))r=Math.min(r,1);return r}; /* a first dated finish for Browser, ten finished for Regular and beyond */
+/* Ranks by Kay and Claude. */
+const rankIdx=S=>{const n=S.fin||0;let r=0;RK.forEach((x,i)=>{if(n>=x)r=i});return r};
 const ttl=()=>{db.flags.title=db.flags.title||{};return db.flags.title};
 const isOwner=()=>!!(st.user&&st.owner&&st.user.uid===st.owner);
 const grantedKeys=()=>db.sync.granted||[];
@@ -1718,23 +1653,23 @@ const KW={
  toys:['children','kids','picture book','bedtime','nursery','infantil','ninos','libro ilustrado','cuento'],
  crystal:['video game','videogame','videojuego','game tie in','gaming','bioshock','mass effect','dragon age','final fantasy','witcher','halo','zelda','skyrim','elder scrolls','fallout','warcraft','starcraft','diablo','assassin’s creed','assassins creed','resident evil','metal gear','kingdom hearts','dark souls','pokemon','uncharted','god of war']
 };
-const isFin=b=>(b.reads||[]).some(r=>r.end)||(!STRICT&&b.status==='finished');
+const isFin=b=>(b.reads||[]).some(r=>r.end&&!r.u)||(!STRICT&&b.status==='finished');
+const finN=()=>myBooks().filter(b=>!b.rep&&isFin(b)).length;
 const kwHit=(b,id)=>{const t=(b.genres||[]).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),f=(b.format||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return KW[id].some(k=>t.includes(k))||(id==='comic'&&/comic|manga|graphic|historieta|novela grafica/.test(f))};
 const gCount=id=>myBooks().filter(b=>!b.rep&&isFin(b)&&kwHit(b,id)).length;
-const nTro=()=>{try{return earnedN(trophyState())}catch(e){return 0}};
 function inSeason(id){const d=new Date(),m=d.getMonth()+1,day=d.getDate();if(id==='hallow')return m===10||(m===11&&day<=2);if(id==='yule')return m===12||(m===1&&day<=6);if(id==='sobremesa')return m===10;if(id==='brigid'||id==='valentine')return m===2;if(id==='patrick')return m===3;return false}
 const verified=()=>!!(st.user&&st.user.emailVerified);
 const RULES={
  nook:{need:'',ok:()=>true},
- cat:{need:'Add 5 books',ok:()=>myBooks().length>=5},
+ cat:{need:'Finish 3 books, with a finish date',ok:()=>finN()>=3},
  meadow:{need:'Finish your first book, with a finish date',ok:()=>myBooks().some(b=>!b.rep&&isFin(b))},
  comic:{need:'Finish 2 comics, manga or graphic novels',ok:()=>gCount('comic')>=2},
  scifi:{need:'Finish 2 books tagged sci fi',ok:()=>gCount('scifi')>=2},
  fantasy:{need:'Finish 2 books tagged fantasy',ok:()=>gCount('fantasy')>=2},
  gothic:{need:'Finish 2 books tagged horror or gothic',ok:()=>gCount('gothic')>=2},
  toys:{need:'Add a children’s book, or mark one On repeat',ok:()=>myBooks().some(b=>b.rep||kwHit(b,'toys'))},
- frontier:{need:'Finish 2 westerns, or reach 18 trophies',ok:()=>gCount('frontier')>=2||nTro()>=18},
- regency:{need:'Finish 2 romances, or reach 33 trophies',ok:()=>gCount('regency')>=2||nTro()>=33},
+ frontier:{need:'Finish 2 westerns, or finish 20 books',ok:()=>gCount('frontier')>=2||finN()>=20},
+ regency:{need:'Finish 2 romances, or finish 50 books',ok:()=>gCount('regency')>=2||finN()>=50},
  crystal:{need:'Finish 2 books based on video games (tag: video game, or the game’s name)',ok:()=>gCount('crystal')>=2},
  hallow:{need:'Open Shelf in Hallowe’en week',ok:()=>inSeason('hallow')},
  yule:{need:'Open Shelf during Yuletide',ok:()=>inSeason('yule')},
@@ -1767,7 +1702,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. A Household tab appears once you start or join a household. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v40',m:'Changed: ranks now follow the books you have finished with a finish date, and every rank has a milestone trophy. The generic trophies are gone. Holidays, rare finds, favourites, reading volume and yearly goals stay. Cards show books read in total and this year.',i:'🎖️'},{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. A Household tab appears once you start or join a household. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -1803,10 +1738,10 @@ function notesInit(){
   CHANGES.forEach((c,i)=>{if(fresh&&i>0)return;notify(c.id,c.m,c.i)});
 }
 function rankBar(S){
-  const n=pointsOf(S),cur=rankIdx(S),names=rankNames();
+  const n=S.fin||0,cur=rankIdx(S),names=rankNames();
   if(cur>=RK.length-1)return`<div class="rbar"><i style="width:100%"></i></div><p class="note">Top rank reached: ${esc(names[cur])}.</p>`;
-  const lo=RK[cur],hi=RK[cur+1],pc=Math.max(2,Math.min(100,Math.round((n-lo)/(hi-lo)*100)));
-  return`<div class="rbar"><i style="width:${pc}%"></i></div><p class="note">Next rank: ${esc(names[cur+1])}. Books you read and trophies you earn both count.</p>`;
+  const lo=RK[cur],hi=RK[cur+1],pc=Math.max(2,Math.min(100,Math.round((n-lo)/(hi-lo)*100))),left=hi-n;
+  return`<div class="rbar"><i style="width:${pc}%"></i></div><p class="note">${left} more ${left===1?'book':'books'} to ${esc(names[cur+1])}. Only books with a finish date count.</p>`;
 }
 function titleTick(){
   let S=TCACHE;if(!S||S.ver!==dbVer)return;
@@ -1815,7 +1750,7 @@ function titleTick(){
   themeCheck();
   if(t.top==null){t.top=cur;t.rank=cur;t.at=0;t.flair=t.flair||'';t.fl=fe;ch=true}
   else{
-    if(cur>t.top){t.top=cur;t.rank=cur;t.at=Date.now();ch=true;msg='New rank: '+rankNames()[cur];notify('rank:'+cur,msg+'. Your books and trophies added up to it.','🎖️')}
+    if(cur>t.top){t.top=cur;t.rank=cur;t.at=Date.now();ch=true;msg='New rank: '+rankNames()[cur];notify('rank:'+cur,msg+'. You have finished '+(S.fin||0)+' books.','🎖️')}
     const nf=fe.filter(k=>!(t.fl||[]).includes(k));
     if(nf.length){t.fl=(t.fl||[]).concat(nf);ch=true;nf.forEach(k=>{const f0=FLAIR.find(f=>f.k===k);if(f0)notify('flair:'+k,'New title unlocked: '+f0.n+(TBY[f0.id]?'. It comes from the '+TBY[f0.id].n+' trophy.':''),'🏅')});if(!msg)msg='New title unlocked: '+FLAIR.find(f=>f.k===nf[0]).n+(nf.length>1?` (+${nf.length-1} more)`:'')}
   }
@@ -1837,7 +1772,7 @@ function openTitles(){
   const frows=`<button class="trow${m.flair?'':' on'}" data-flair=""><span>No flair</span><span class="note">${m.flair?'':'Equipped'}</span></button>`+m.fe.map(f=>`<button class="trow${f.n===m.flair?' on':''}" data-flair="${f.k}"><span>${esc(f.n)}</span><span class="note">${f.n===m.flair?'Equipped':f.ok(S)?esc(f.sub||(TBY[f.id]?TBY[f.id].n:'')):'Gifted'}</span></button>`).join('');
   $('#tdet').innerHTML=`<div class="tcard ttl"><h2>Titles</h2><div class="note">${m.n} trophies${nxt?'':' · top rank reached'}</div>
   <h3>Nickname</h3><div class="f"><input id="nick" maxlength="20" placeholder="Optional, up to 20 characters" value="${esc(nickOf())}" autocomplete="off"></div>
-  <h3>Rank</h3><p class="note">Your rank moves up by itself as you read books and earn trophies. You can switch to any rank you have already reached.</p><div class="tlist">${rrows}</div>
+  <h3>Rank</h3><p class="note">Your rank moves up by itself as you finish books. You can switch to any rank you have already reached.</p><div class="tlist">${rrows}</div>
   <h3>Flair</h3><p class="note">${m.fe.length?'Earned from specific trophies, or given to you. Pick one to show next to your rank.':'Flair titles are earned from specific trophies. Your first one will appear here.'}</p><div class="tlist">${frows}</div>
   <div class="setrow" style="justify-content:center"><button class="btn p" data-act="tclose">Done</button></div></div>`;
   $('#tdet').hidden=false;
@@ -1876,8 +1811,10 @@ function mergeFlags(a,b){
 }
 
 /* ----- rank insignia: simple marks first, richer ones as you climb ----- */
-function rankSVG(i,w){
-  const K=SK[theme]||SK.nook,m=[0,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4][i],f=pk(K.f,m),sc=pk(K.s,m),a=K.a&&typeof K.a==='string'&&i<4?sc:sc;
+const RMET=[0,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4];
+/* Insignia drawn by Kay & Claude for Shelf. */
+function rankSVG(i,w,bare){
+  const K=SK[theme]||SK.nook,m=RMET[i],f=pk(K.f,m),sc=pk(K.s,m),a=K.a&&typeof K.a==='string'&&i<4?sc:sc;
   const st=`fill="${f}" stroke="${sc}" stroke-width="1.6" stroke-linejoin="round"`;
   const chev=y=>`<path d="M5 ${y+9}L24 ${y}L43 ${y+9}V${y+14}L24 ${y+5}L5 ${y+14}Z" ${st}/>`;
   const rock=y=>`<path d="M5 ${y}Q24 ${y+12} 43 ${y}" fill="none" stroke="${sc}" stroke-width="5" stroke-linecap="round"/><path d="M5 ${y}Q24 ${y+12} 43 ${y}" fill="none" stroke="${f}" stroke-width="2.4" stroke-linecap="round"/>`;
@@ -1906,6 +1843,7 @@ function rankSVG(i,w){
    case 14:b=wreath(24,25,20)+star(24,16,8)+star(15,31,8)+star(33,31,8);break;
    default:b=wings+wreath(24,25,15)+star(24,23,6.5)+star(15,31,5)+star(33,31,5)+crown(0)+`<path d="M6 39H42L38 43.5L42 48H6L10 43.5Z" ${st}/>`;
   }
+  if(bare)return b;
   return`<svg class="rsvg" viewBox="0 -2 48 52" width="${w||28}" height="${Math.round((w||28)*52/48)}" role="img" aria-label="Rank ${i+1} of 16">${b}</svg>`;
 }
 /* ----- owner tools: give a title to someone by email ----- */
@@ -2004,10 +1942,10 @@ const psig=b=>JSON.stringify([b.status,b.rating,b.review,b.notes,b.reads,b.progr
 const cardCfg=()=>db.flags.card||{};
 const cardTheme=()=>{const c=cardCfg().c;return c&&THEMES[c]?c:theme};
 const cardOn=()=>cardCfg().on!==0;
-function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};{const fb=favBooks();if(fb.length)c.b=fb.map(favSmall);const ft=favtSmall();if(ft.length)c.h=ft}if(cardOn()){const m=mine(trophyState());c.r=m.rank;c.f=m.flair||'';c.t=m.n}return c}
-const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''))&&JSON.stringify((a||{}).b||[])===JSON.stringify((b||{}).b||[])&&JSON.stringify((a||{}).h||[])===JSON.stringify((b||{}).h||[]);
+function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};{const fb=favBooks();if(fb.length)c.b=fb.map(favSmall);const ft=favtSmall();if(ft.length)c.h=ft}if(cardOn()){const S=trophyState(),m=mine(S),yy=String(new Date().getFullYear());c.r=m.rank;c.f=m.flair||'';c.p=S.fin||0;c.y={y:yy,n:(S.Y&&S.Y[yy])||0}}return c}
+const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''))&&JSON.stringify((a||{}).b||[])===JSON.stringify((b||{}).b||[])&&JSON.stringify((a||{}).h||[])===JSON.stringify((b||{}).h||[])&&((a||{}).p??'')===((b||{}).p??'')&&JSON.stringify((a||{}).y||{})===JSON.stringify((b||{}).y||{});
 function cardHTML(c,you){const T=THEMES[c.k]||THEMES.nook,d=T.dots,h=d[2].replace('#',''),L=h.length===6?(0.299*parseInt(h.slice(0,2),16)+0.587*parseInt(h.slice(2,4),16)+0.114*parseInt(h.slice(4,6),16)):255,tx=L>140?'#2b2118':'#f5efe6';
-  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span><span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`:''}${c.b&&c.b.length?`<div class="mfav">${c.b.slice(0,3).map(miniBook).join('')}</div>`:''}${c.h&&c.h.length?`<div class="mfav">${c.h.slice(0,3).map(miniTro).join('')}</div>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
+  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span>${c.p!=null?`<span>${c.p} ${c.p===1?'book':'books'} read${c.y?` · ${c.y.n} in ${esc(c.y.y)}`:''}</span>`:`<span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`}`:''}${c.b&&c.b.length?`<div class="mfav">${c.b.slice(0,3).map(miniBook).join('')}</div>`:''}${c.h&&c.h.length?`<div class="mfav">${c.h.slice(0,3).map(miniTro).join('')}</div>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
 let HH=null,hhBusy=false,hhInv=[],hhMsg='';
 function hhTouch(b){
   const S=db.sync;if(!S.hid)return;S.hdirty=S.hdirty||{};
@@ -2109,6 +2047,7 @@ async function hhAct(kind,arg){
   }catch(e){toast(e&&e.code==='permission-denied'?'Not allowed. Check the household rules in Firebase.':'That did not work. Try again.')}
   hhBusy=false;await sync(true);render();
 }
+/* Created by Kay & Claude. */
 function householdPage(){
   const S=db.sync;
   if(!st.user)return`<div class="sec"><h3>Household</h3><p class="note">Sign in (Settings) to see your household.</p></div>`;
@@ -2333,9 +2272,10 @@ function favtPart(id,choose){
   if(ids.length<3||!choose)return row(`<button class="btn" data-act="ftadd" data-id="${id}">Add to my card</button>`);
   return`<p class="note" style="margin:10px 0 6px">Your card already shows three. Pick one to replace.</p>`+ids.map(o=>`<button class="favres" data-act="ftswap" data-id="${id}" data-old="${o}"><span class="mtr">${trophySVG(TBY[o],Math.max(1,favtLvl(o)),{w:30})}</span><span class="ft"><b>${esc(TBY[o].n)}</b></span><span class="note">Replace</span></button>`).join('');
 }
+/* Kay and Claude, Shelf. */
 function favtBox(){
   const ids=favtIds();
-  return`<div class="sec"><h3>Favourite trophies</h3><p class="note">Pick up to three earned trophies for your card. Open a trophy on the Trophies tab and choose Add to my card.</p>
+  return`<div class="sec"><h3>Favourite trophies</h3><p class="note">Pick up to three earned trophies for your card. Open one on the Trophies tab and choose Add to my card.</p>
   ${ids.map(i=>`<div class="favrow"><span class="mtr">${trophySVG(TBY[i],Math.max(1,favtLvl(i)),{w:34})}</span><span class="ft"><b>${esc(TBY[i].n)}</b></span><button class="x" data-act="ftdel" data-id="${i}" aria-label="Remove ${esc(TBY[i].n)}">✕</button></div>`).join('')}
   ${ids.length?'':'<p class="note">None chosen yet.</p>'}</div>`;
 }
@@ -2343,7 +2283,7 @@ function titleLists(){
   const S=trophyState(),m=mine(S),names=rankNames();
   const rrows=names.map((nm,i)=>i>m.cur?'':`<button class="trow${i===m.r?' on':''}" data-rank="${i}"><span class="rl">${rankSVG(i,30)}<span>${esc(nm)}</span></span><span class="note">${i===m.r?'Equipped':'Reached'}</span></button>`).join('');
   const frows=`<button class="trow${m.flair?'':' on'}" data-flair=""><span>No flair</span><span class="note">${m.flair?'':'Equipped'}</span></button>`+m.fe.map(f=>`<button class="trow${f.n===m.flair?' on':''}" data-flair="${f.k}"><span>${esc(f.n)}</span><span class="note">${f.n===m.flair?'Equipped':f.ok(S)?esc(f.sub||(TBY[f.id]?TBY[f.id].n:'')):'Gifted'}</span></button>`).join('');
-  return`<div class="sec"><h3>Rank</h3><p class="note">${m.n} trophies. Your rank moves up by itself as you read books and earn trophies, and you can switch to any rank you have reached.</p><label class="note" style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input type="checkbox" id="rnT"${rnThemed()?' checked':''}> Use the rank names from my theme (otherwise everyone sees the same names)</label><div class="tlist">${rrows}</div></div>
+  return`<div class="sec"><h3>Rank</h3><p class="note">${S.fin||0} books finished. Your rank moves up by itself as you finish books with a finish date, and you can switch to any rank you have reached.</p><label class="note" style="display:flex;gap:8px;align-items:center;margin:0 0 8px"><input type="checkbox" id="rnT"${rnThemed()?' checked':''}> Use the rank names from my theme (otherwise everyone sees the same names)</label><div class="tlist">${rrows}</div></div>
   <div class="sec"><h3>Flair</h3><p class="note">${m.fe.length?'Earned from specific trophies, or given to you. Pick one to show next to your rank.':'Flair titles are earned from specific trophies. Your first one will appear here.'}</p><div class="tlist">${frows}</div></div>`;
 }
 function cardBox(){
@@ -2351,9 +2291,10 @@ function cardBox(){
   return`<div class="sec"><h3>Your card</h3><div id="pvcard" class="mcards"></div>
   <div class="f"><label>Nickname</label><input id="nick" maxlength="20" placeholder="Optional, up to 20 characters" value="${esc(nickOf())}" autocomplete="off"></div>
   <div class="f"><label>Card colours</label><select id="hhColour">${opts}</select></div>
-  <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hhShow"${cardOn()?' checked':''}> Show my rank, title and trophies on my card</label></div>`;
+  <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hhShow"${cardOn()?' checked':''}> Show my rank, title and book counts on my card</label></div>`;
 }
 function refreshPreview(){const p=$('#pvcard');if(p)p.innerHTML=cardHTML(myCard(),1)}
+/* Kay & Claude made this. Please keep the credit. */
 function renderProfile(keep){
   const y=window.scrollY;
   $('#tools').innerHTML='';
@@ -2387,6 +2328,7 @@ function themeGroups(){
   if(rest.length)gs.push({id:'more',name:'More',note:'',ids:rest});
   return gs.filter(g=>g.ids.length);
 }
+/* Themes and trophies: Kay & Claude. */
 function themeBox(){
   const open=ui.thOpen||(ui.thOpen={});
   const body=themeGroups().map(g=>{
@@ -2398,6 +2340,7 @@ function themeBox(){
 }
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.classList.contains('tgroup')){(ui.thOpen||(ui.thOpen={}))[d.dataset.g]=d.open}},true);
 
+const SHELF_BY='Kay & Claude';
 /* ---------- Wiring ---------- */
 function render(){
   if(ui.tab==='household'&&!db.sync.hid)ui.tab='profile';
@@ -2486,6 +2429,7 @@ document.addEventListener('input',e=>{
 });
 const PP=[10,20,50,100];
 function perPage(){let n=0;try{n=+localStorage.getItem('shelf.pp')}catch(_){}return PP.includes(n)?n:20}
+/* Shelf: built by Kay and Claude. */
 function renderLibraryList(){
   const l=filtered(),n=perPage(),pages=Math.max(1,Math.ceil(l.length/n));
   if(!ui.page||ui.page<0)ui.page=0;if(ui.page>=pages)ui.page=pages-1;
