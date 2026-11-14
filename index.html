@@ -1005,6 +1005,7 @@ function saveBook(){
   const i=db.books.findIndex(b=>b.id===d.id);if(i>=0)db.books[i]=d;else db.books.push(d);
   save();closeForm();render();toast('Saved');
   try{const after=levelsNow(),ups=[];TR.forEach(t=>{if(after.lvl[t.id]>(before[t.id]||0))ups.push({t,lvl:after.lvl[t.id]})});if(ups.length){const s=seenMap();ups.forEach(u=>{s[u.t.id]=u.lvl});persistLocal();setTimeout(()=>celebrate(ups),600)}}catch(e){}
+  try{regNudge()}catch(e){}
 }
 const LKL=[['any','Any language'],['en','English'],['es','Spanish'],['fr','French'],['de','German'],['pt','Portuguese'],['it','Italian'],['ca','Catalan']];
 const L3={en:'eng',es:'spa',fr:'fre',de:'ger',pt:'por',it:'ita',ca:'cat'};
@@ -1130,7 +1131,7 @@ async function fbInit(){
     const [app,auth,fs]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
     const a=app.initializeApp(cfg);
     FB={auth:auth.getAuth(a),fs:fs.getFirestore(a),A:auth,F:fs};
-    FB.A.onAuthStateChanged(FB.auth,u=>{st.user=u;st.ready=true;if(u)onSignedIn(u);if(stab())render()});
+    FB.A.onAuthStateChanged(FB.auth,u=>{st.user=u;st.ready=true;if(u){onSignedIn(u);welcomeCheck()}if(stab())render()});
     st.error='';
   }catch(e){FB=null;st.error='Could not load the sync service. Check your connection.';st.tried=false}
   return FB;
@@ -1320,7 +1321,7 @@ const D_=(id,n,g,h,label,q)=>({id,n,k:'D',g,t:[1,2,3],d:['Start or finish a book
 const maxMon=(c,f)=>Math.max(0,...Object.values(c.M).map(f?f:x=>x));
 /* ranks run on books finished with a finish date. Newcomer is the start, then 15 steps. */
 const RK=[0,1,10,20,30,45,60,80,100,125,150,190,240,300,380,500];
-/* one milestone trophy for each rank after the first, drawn with that rank's insignia */
+/* one milestone trophy for each rank for each rank after Newcomer, drawn with that rank's insignia */
 const MILE=[
  ['The First One','One down. The rest of the pile is listening.'],
  ['Double Digits','Ten books, and nobody had to ask.'],
@@ -1716,8 +1717,8 @@ function notify(id,m,i){
   const N=NT();if(N[id])return;
   N[id]={m,i:i||'🔔',at:Date.now(),r:0,x:0};persistLocal();scheduleSync();bellDot();
 }
-const NI={tr:'🏆',rank:'🎖️',flair:'🏅',theme:'🎨',hh:'👥',chg:'📚',wel:'📚'};
-const isNews=k=>/^(chg|wel):/.test(k);
+const NI={tr:'🏆',rank:'🎖️',flair:'🏅',theme:'🎨',hh:'👥',chg:'📚',wel:'📚',reg:'☁️'};
+const isNews=k=>/^(chg|wel|reg):/.test(k);
 const niOf=k=>NI[k.split(':')[0]]||'🔔';
 function openBell(){
   const all=Object.entries(NT()).filter(([k,n])=>!n.x).sort((a,b)=>b[1].at-a[1].at);
@@ -1734,8 +1735,19 @@ function bellClear(){const tab=ui.bellTab==='n';Object.entries(NT()).forEach(([k
 function notesInit(){
   try{localStorage.removeItem('shelf.notes');localStorage.removeItem('shelf.tu');localStorage.removeItem('shelf.chg')}catch(e){}
   const fresh=!Object.keys(NT()).length&&!db.books.length;
-  if(fresh)notify('wel:1','Welcome to Shelf. Add your first book and it will appear on your shelf. Trophies, ranks and themes turn up as you read. Everything stays on this device unless you switch on sync in Settings.','📚');
-  CHANGES.forEach((c,i)=>{if(fresh&&i>0)return;notify(c.id,c.m,c.i)});
+  if(fresh){if(!db.flags.nw){db.flags.nw=today();persistLocal()}return}
+  CHANGES.forEach(c=>notify(c.id,c.m,c.i));
+}
+/* a brand new person gets one welcome note, and only once they have registered */
+function welcomeCheck(){
+  if(!st.user||!db.flags.nw||NT()['wel:1'])return;
+  notify('wel:1','Welcome to Shelf. Add books with the + button or by scanning a barcode, then log dates, ratings and goals. Trophies and ranks turn up as you finish books, and your library stays in step across your devices.','📚');
+}
+/* books added without an account live on this device only, so say so once */
+function regNudge(){
+  if(st.user||db.sync.enabled||!db.books.length||NT()['reg:1'])return;
+  notify('reg:1','Your books are only stored on this device. Create an account in Settings to back them up and sync them across your devices.','☁️');
+  setTimeout(()=>toast('Tip: create an account in Settings to back up your books.'),1800);
 }
 function rankBar(S){
   const n=S.fin||0,cur=rankIdx(S),names=rankNames();
