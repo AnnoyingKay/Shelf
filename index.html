@@ -871,7 +871,7 @@ function setTheme(id){
 }
 const tint=t=>{let h=0;for(const c of t||'?')h=(h*31+c.charCodeAt(0))>>>0;const P=T().pastel;return P[h%P.length]};
 let db={books:[],goals:{},flags:{themes:{},seen:{}},sync:{uid:'',last:0,at:0,dirty:{},tomb:{},goalsAt:0,enabled:false}};
-const ui={tab:'library',status:'all',q:'',sort:'added',format:'all',year:new Date().getFullYear()};
+const ui={tab:'library',status:'all',q:'',sort:'added',format:'all',genre:'all',year:new Date().getFullYear()};
 let d=null,isNew=false,lookupRes=null,lookupMsg='';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -894,7 +894,7 @@ function newBook(p){return Object.assign({id:uid(),title:'',author:'',format:'Pa
 /* ---------- Library ---------- */
 function filtered(){
   const q=ui.q.trim().toLowerCase();
-  let l=db.books.filter(b=>(ui.status==='all'||(ui.status==='rep'?b.rep:ui.status==='undated'?(b.status==='finished'&&!b.rep&&b.pr!==false&&!lastEnd(b)):(b.status===ui.status&&!b.rep)))&&(ui.format==='all'||b.format===ui.format)&&(!q||[b.title,b.author,b.series,b.genres.join(' ')].join(' ').toLowerCase().includes(q)));
+  let l=db.books.filter(b=>(ui.own?b.own==='?':(ui.status==='all'||(ui.status==='rep'?b.rep:ui.status==='undated'?(b.status==='finished'&&!b.rep&&b.pr!==false&&!lastEnd(b)):(b.status===ui.status&&!b.rep))))&&(ui.format==='all'||b.format===ui.format)&&(ui.genre==='all'||b.genres.includes(ui.genre))&&(!q||[b.title,b.author,b.series,b.genres.join(' ')].join(' ').toLowerCase().includes(q)));
   const cmp={added:(a,b)=>b.added.localeCompare(a.added),title:(a,b)=>a.title.localeCompare(b.title),author:(a,b)=>a.author.localeCompare(b.author),rating:(a,b)=>(b.rating||0)-(a.rating||0),finished:(a,b)=>lastEnd(b).localeCompare(lastEnd(a))}[ui.sort];
   return l.sort(cmp);
 }
@@ -902,6 +902,7 @@ function card(b){
   const pct=b.pages&&b.progress?Math.min(100,Math.round(b.progress/b.pages*100)):0;
   let sub=[];
   if(b.series)sub.push(esc(b.series)+(b.seriesNo!==''?' #'+esc(b.seriesNo):''));
+  if(b.own==='?')sub.push('Ownership to confirm');else if(b.own==='n')sub.push('No longer owned');
   if(b.status==='finished'&&lastEnd(b))sub.push('Finished '+fmtDate(lastEnd(b)));
   if(b.status==='reading'&&firstStart(b))sub.push('Started '+fmtDate(b.reads.filter(r=>r.start&&!r.end).map(r=>r.start).sort().pop()||firstStart(b)));
   return `<div class="card" data-open="${b.id}">
@@ -915,11 +916,11 @@ function card(b){
 function hello(){return T().hello}
 function renderLibrary(){
   const counts={all:db.books.length,rep:db.books.filter(b=>b.rep).length};Object.keys(STATUS).forEach(k=>counts[k]=db.books.filter(b=>b.status===k&&!b.rep).length);
-  const chips=['all',...Object.keys(STATUS),'rep'].filter(k=>k!=='rep'||counts.rep||ui.status==='rep').map(k=>`<button data-status="${k}" class="${ui.status===k?'on':''}">${k==='all'?'All':k==='rep'?'🔁 On repeat':STATUS[k]} ${counts[k]}</button>`).join('');
+  const chips=['all',...Object.keys(STATUS),'rep'].filter(k=>k!=='rep'||counts.rep||ui.status==='rep').map(k=>`<button data-status="${k}" class="${ui.status===k&&!ui.own?'on':''}">${k==='all'?'All':k==='rep'?'🔁 On repeat':STATUS[k]} ${counts[k]}</button>`).join('')+ownChip();
   $('#tools').innerHTML=`<p class="hello">${hello()}</p>${doodleCard()}${chipBtn()}${stripHTML()}`;
   const fb=`<div class="fbar"><input id="q" type="search" placeholder="Search title, author, series, tag" value="${esc(ui.q)}"><div class="chips">${chips}</div></div>
   <div class="row2"><select id="sort">${[['added','Recently added'],['title','Title'],['author','Author'],['rating','Rating'],['finished','Date finished']].map(([v,t])=>`<option value="${v}" ${ui.sort===v?'selected':''}>${t}</option>`).join('')}</select>
-  <select id="fmt"><option value="all">All formats</option>${FORMATS.map(f=>`<option ${ui.format===f?'selected':''}>${f}</option>`).join('')}</select>${viewBtns()}</div><div id="lst"></div><div id="pgr"></div>`;
+  <select id="fmt"><option value="all">All formats</option>${FORMATS.map(f=>`<option ${ui.format===f?'selected':''}>${f}</option>`).join('')}</select>${genreSel()}${viewBtns()}</div><div id="lst"></div><div id="pgr"></div>`;
   $('#main').innerHTML=fb;
   renderLibraryList();
   return;
@@ -957,7 +958,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=44;
+const APP_VER=46;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -1012,7 +1013,7 @@ function drawForm(keepScroll){
   <div class="g2"><div class="f"><label>Format</label><select data-f="format">${FORMATS.map(f=>`<option ${d.format===f?'selected':''}>${f}</option>`).join('')}</select></div>
   ${d.status==='reading'?'<div></div>':`<div class="f"><label>Pages</label><input type="number" inputmode="numeric" data-f="pages" value="${esc(d.pages)}"></div>`}</div>
   <div class="g2"><div class="f"><label>Series</label><input data-f="series" value="${esc(d.series)}"></div><div class="f"><label>Number in series</label><input data-f="seriesNo" inputmode="decimal" value="${esc(d.seriesNo)}"></div></div>
-  <div class="f"><label>Tags or genres (comma separated)</label><input data-f="genres" value="${esc(d.genres.join(', '))}"></div>
+  <div class="f"><label>Genres and tags (comma separated)</label><input data-f="genres" value="${esc(d.genres.join(', '))}"></div>
   <div class="f"><label>ISBN</label><input data-f="isbn" inputmode="numeric" value="${esc(d.isbn)}"></div>
   <details class="sec"${(d.edition||d.rel||d.bought||d.copies)?' open':''}><summary><b>Edition details</b> (optional)</summary>
   <div class="f"><label>Edition</label><input data-f="edition" value="${esc(d.edition)}" placeholder="For example: First edition, or Penguin Classics 2003" autocomplete="off"></div>
@@ -1020,6 +1021,7 @@ function drawForm(keepScroll){
   <div class="f"><label>Copies you own</label><input type="number" inputmode="numeric" min="0" data-f="copies" value="${esc(d.copies)}"></div></div>
   <div class="f"><label>Date of purchase (physical copies)</label><input type="date" data-f="bought" value="${esc(d.bought)}"></div></details>
   <div class="f"><label>Cover image URL</label><input data-f="cover" value="${d.cover.startsWith('data:')?'':esc(d.cover)}" placeholder="${d.cover.startsWith('data:')?'Custom image set':'https://…'}"><div class="setrow"><label class="btn">Choose image from phone<input type="file" id="covfile" accept="image/*" hidden></label>${d.cover?'<button class="btn" data-act="nocover">Remove cover</button>':''}</div></div>
+  ${ownBox()}
   <div class="f"><label>Review</label><textarea data-f="review">${esc(d.review)}</textarea></div>
   <div class="f"><label>Notes and quotes</label><textarea data-f="notes">${esc(d.notes)}</textarea></div>
   ${isNew?'':'<div class="f"><button class="btn d" data-act="delbook" style="width:100%">Delete this book</button></div>'}
@@ -1148,7 +1150,12 @@ function importGoodreads(text){
   if(n>0)db.flags.gr=db.flags.gr||today();save();render();toast(`Imported ${n} book${n===1?'':'s'}${skip?`, skipped ${skip} duplicate${skip===1?'':'s'}`:''}.`);
 }
 function importJSON(text){
-  try{const p=JSON.parse(text);if(!Array.isArray(p.books))throw 0;const m=new Map(db.books.map(b=>[b.id,b]));p.books.forEach(b=>{const nb=newBook(b);touch(nb);m.set(nb.id,nb)});db.books=[...m.values()];db.goals=Object.assign(db.goals,p.goals||{});save();render();toast('Backup imported.')}
+  try{const p=JSON.parse(text);if(!Array.isArray(p.books))throw 0;const m=new Map(db.books.map(b=>[b.id,b]));
+    /* books that carry a source (spreadsheet imports) are skipped when the title is already on the shelf, or when they were imported before */
+    const nk=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    const have=new Set(db.books.map(b=>nk(b.title)));let n=0,skip=0;
+    p.books.forEach(b=>{const nb=newBook(b);if(nb.src&&(m.has(nb.id)||have.has(nk(nb.title)))){skip++;return}touch(nb);m.set(nb.id,nb);n++});
+    db.books=[...m.values()];db.goals=Object.assign(db.goals,p.goals||{});save();render();toast(skip?`Imported ${n}, skipped ${skip} already on your shelf.`:'Backup imported.')}
   catch(e){toast('Could not read that backup file.')}
 }
 
@@ -1739,7 +1746,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v40',m:'Changed: ranks now follow the books you have finished with a finish date, and every rank has a milestone trophy. The generic trophies are gone. Holidays, rare finds, favourites, reading volume and yearly goals stay. Cards show books read in total and this year.',i:'🎖️'},{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. A Household tab appears once you start or join a household. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v45',m:'New: books can carry an ownership note with the source they came from, and a To confirm filter in the library for the ones you have not checked yet.',i:'📚'},{id:'chg:v40',m:'Changed: ranks now follow the books you have finished with a finish date, and every rank has a milestone trophy. The generic trophies are gone. Holidays, rare finds, favourites, reading volume and yearly goals stay. Cards show books read in total and this year.',i:'🎖️'},{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. A Household tab appears once you start or join a household. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -2411,7 +2418,8 @@ document.addEventListener('click',async e=>{
   if(ds.flair!==undefined){pickTitle('flair',ds.flair);return}
   if(ds.tab){ui.tab=ds.tab;render();window.scrollTo(0,0);return}
   if(ds.pg){ui.page=(ui.page||0)+(+ds.pg);renderLibraryList();const f=$('.fbar');if(f)window.scrollTo({top:Math.max(0,f.getBoundingClientRect().top+scrollY-4)});return}
-  if(ds.status){ui.status=ds.status;ui.page=0;render();return}
+  if(ds.own){ui.own=!ui.own;ui.page=0;render();return}
+  if(ds.status){ui.status=ds.status;ui.own=false;ui.page=0;render();return}
   if(ds.year){ui.year=+ds.year;render();return}
   if(ds.open){openForm(ds.open);return}
   if(ds.pick!==undefined){pick(+ds.pick);return}
@@ -2429,6 +2437,8 @@ document.addEventListener('click',async e=>{
     case'scan':startScan();break;
     case'stopscan':stopScan();break;
     case'nocover':d.cover='';drawForm();break;
+    case'own':ownSet(ds.v,0);drawForm(1);render();break;
+    case'ownall':ownSet(ds.v,1);drawForm(1);render();break;
     case'delbook':{const hb=db.books.find(b=>b.id===d.id),hs=hb&&hb.hh&&db.sync.hid;if(confirm(hs?'Delete this book for everyone in your household? This cannot be undone.':'Delete this book? This cannot be undone.')){if(hb)hhDelete(hb);db.books=db.books.filter(b=>b.id!==d.id);db.sync.tomb[d.id]=Date.now();db.sync.dirty[d.id]=1;save();closeForm();render();toast('Deleted')}break}
     case'titles':ui.tab='profile';render();window.scrollTo(0,0);break;
     case'favadd':favAdd(ds.id);break;
@@ -2487,6 +2497,28 @@ const VIEWS=[
 function libView(){const x=db.flags&&db.flags.view;return x&&VIEWS.some(v=>v[0]===x.v)?x.v:'li'}
 function viewBtns(){const c=libView();return`<div class="vws" role="group" aria-label="Library view">${VIEWS.map(v=>`<button data-act="view" data-v="${v[0]}" class="${v[0]===c?'on':''}" aria-label="${v[1]}" aria-pressed="${v[0]===c}" title="${v[1]}"><svg viewBox="0 0 24 24" aria-hidden="true">${v[2]}</svg></button>`).join('')}</div>`}
 function setView(v){if(!VIEWS.some(x=>x[0]===v))return;db.flags.view={v,at:Date.now()};persistLocal();scheduleSync();render()}
+/* Ownership: own is '' (not tracked), '?' (to confirm), 'y' or 'n'. src says where the entry came from. */
+function ownBox(){
+  if(!d.own&&!d.src)return'';
+  const o=d.own||'?',src=d.src?`<p class="note">Source: ${esc(d.src)}</p>`:'';
+  const same=o==='?'&&d.series?db.books.filter(b=>b.id!==d.id&&b.own==='?'&&b.series===d.series):[];
+  const msg=o==='y'?'You own this. Confirmed.':o==='n'?'You no longer own this.':'Not confirmed that you own this.';
+  const act=(v,t,p)=>`<button class="btn${p?' p':''}" data-act="own" data-v="${v}">${t}</button>`;
+  const btns=o==='?'?act('y','I own it',1)+act('n','I do not own it'):o==='y'?act('n','I no longer own it')+act('?','Not confirmed'):act('y','I own it')+act('?','Not confirmed');
+  const all=same.length?`<div class="setrow"><button class="btn" data-act="ownall" data-v="y">I own all ${same.length+1} in ${esc(d.series)}</button><button class="btn" data-act="ownall" data-v="n">I own none of them</button></div>`:'';
+  return`<div class="sec"><h3>Ownership</h3><p class="note"><b>${msg}</b></p>${src}<div class="setrow">${btns}</div>${all}</div>`;
+}
+function ownSet(v,all){
+  const ids=[d.id];if(all)db.books.forEach(b=>{if(b.id!==d.id&&b.own==='?'&&b.series===d.series)ids.push(b.id)});
+  d.own=v;ids.forEach(id=>{const b=db.books.find(x=>x.id===id);if(b){b.own=v;touch(b)}});save();
+}
+function genreSel(){
+  const set=new Map();db.books.forEach(b=>(b.genres||[]).forEach(g=>{g=String(g).trim();if(g&&!set.has(g.toLowerCase()))set.set(g.toLowerCase(),g)}));
+  if(ui.genre!=='all'&&![...set.values()].includes(ui.genre))ui.genre='all';
+  if(!set.size)return'';
+  return`<select id="gen"><option value="all">All genres</option>${[...set.values()].sort((a,b)=>a.localeCompare(b)).map(g=>`<option ${ui.genre===g?'selected':''}>${esc(g)}</option>`).join('')}</select>`;
+}
+function ownChip(){const n=db.books.filter(b=>b.own==='?').length;return n?`<button data-own="1" class="${ui.own?'on':''}">To confirm ${n}</button>`:''}
 const PP=[10,20,50,100];
 function perPage(){let n=0;try{n=+localStorage.getItem('shelf.pp')}catch(_){}return PP.includes(n)?n:20}
 /* Shelf: built by Kay and Claude. */
@@ -2505,6 +2537,7 @@ document.addEventListener('change',async e=>{
   if(t.id==='pp'){try{localStorage.setItem('shelf.pp',t.value)}catch(_){}ui.page=0;renderLibraryList()}
   else if(t.id==='sort'){ui.sort=t.value;ui.page=0;render()}
   else if(t.id==='fmt'){ui.format=t.value;ui.page=0;render()}
+  else if(t.id==='gen'){ui.genre=t.value;ui.page=0;render()}
   else if(d&&t.dataset.f==='format'){d.format=t.value}
   else if(t.id==='covfile'&&t.files[0]){const u=await shrinkImage(t.files[0]);if(u){d.cover=u;drawForm()}else toast('Could not read that image.')}
   else if(t.id==='impjson'&&t.files[0]){importJSON(await t.files[0].text());t.value=''}
