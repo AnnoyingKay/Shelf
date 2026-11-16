@@ -779,6 +779,30 @@ nav.tabs button[hidden]{display:none}
   nav.tabs button{flex:0 0 auto;padding:12px 4px}
   nav.tabs button.on{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:12px;margin:0 8px}
 }
+/* Library views and the Advanced box. Kay & Claude. */
+.row2{flex-wrap:wrap}
+.row2 select{min-width:0;flex:1}
+.vws{display:flex;gap:6px;flex:1 1 100%}
+.vws button{flex:1;height:38px;padding:0;border:1px solid var(--line);background:var(--card);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--ink);cursor:pointer}
+.vws button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.vws svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#lst.vw-l .card .cover{display:none}
+#lst.vw-gs,#lst.vw-gb{display:grid;gap:10px;margin-top:10px}
+#lst.vw-gs{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}
+#lst.vw-gb{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+#lst.vw-gs .card,#lst.vw-gb .card{flex-direction:column;margin:0;padding:8px;gap:6px;min-width:0}
+#lst.vw-gs .cover,#lst.vw-gb .cover{width:100%;height:auto;aspect-ratio:2/3}
+#lst.vw-gs .meta>*:not(.t){display:none}
+#lst.vw-gs .meta .t{font-size:12px;-webkit-line-clamp:2}
+#lst.vw-gb .meta>div:nth-child(n+4){display:none}
+#lst.vw-gb .meta>div:nth-child(3) .note{display:none}
+#lst.vw-gb .meta .t{font-size:14px}
+#lst.vw-gs .empty,#lst.vw-gb .empty{grid-column:1/-1}
+details.adv>summary{cursor:pointer;list-style:none}
+details.adv>summary::-webkit-details-marker{display:none}
+details.adv>summary h3{display:inline;margin:0}
+details.adv>summary::after{content:' ▾';color:var(--mute)}
+details.adv[open]>summary::after{content:' ▴'}
 </style>
 </head>
 <body>
@@ -895,7 +919,7 @@ function renderLibrary(){
   $('#tools').innerHTML=`<p class="hello">${hello()}</p>${doodleCard()}${chipBtn()}${stripHTML()}`;
   const fb=`<div class="fbar"><input id="q" type="search" placeholder="Search title, author, series, tag" value="${esc(ui.q)}"><div class="chips">${chips}</div></div>
   <div class="row2"><select id="sort">${[['added','Recently added'],['title','Title'],['author','Author'],['rating','Rating'],['finished','Date finished']].map(([v,t])=>`<option value="${v}" ${ui.sort===v?'selected':''}>${t}</option>`).join('')}</select>
-  <select id="fmt"><option value="all">All formats</option>${FORMATS.map(f=>`<option ${ui.format===f?'selected':''}>${f}</option>`).join('')}</select></div><div id="lst"></div><div id="pgr"></div>`;
+  <select id="fmt"><option value="all">All formats</option>${FORMATS.map(f=>`<option ${ui.format===f?'selected':''}>${f}</option>`).join('')}</select>${viewBtns()}</div><div id="lst"></div><div id="pgr"></div>`;
   $('#main').innerHTML=fb;
   renderLibraryList();
   return;
@@ -933,21 +957,33 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
+const APP_VER=44;
+function syncText(){const S=db.sync;
+  if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
+  if(syncMsg)return syncMsg;
+  return S.at?'Up to date at '+new Date(S.at).toLocaleTimeString('en-IE',{hour:'2-digit',minute:'2-digit',hour12:false}):'Not synced yet.';
+}
+function paintSync(){const e=$('#syncStatus');if(e)e.textContent=syncText()}
+window.addEventListener('online',paintSync);window.addEventListener('offline',paintSync);
+document.addEventListener('toggle',e=>{if(e.target&&e.target.classList&&e.target.classList.contains('adv'))ui.adv=e.target.open},true);
+function advancedBox(){
+  const id=st.user?`<p class="note">Account ID<br><code style="word-break:break-all">${esc(st.user.uid)}</code></p>`:'<p class="note">Your account ID shows here once you sign in.</p>';
+  return`<details class="sec adv"${ui.adv?' open':''}><summary><h3>Advanced</h3></summary>${id}<p class="note">Sync setup: Shelf reads its Firebase settings from the file firebase-config.js.${st.configured===false?' They are not filled in yet, so add your Firebase settings to that file to switch sync on.':''}</p></details>`;
+}
 function renderSettings(){
   $('#tools').innerHTML='';
-  if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(stab())render()})}
-  const y=new Date().getFullYear();
-  $('#main').innerHTML=`<div class="sec"><h3>Reading goal for ${y}</h3><input id="goal" type="number" min="0" inputmode="numeric" placeholder="Books this year" value="${esc(db.goals[y]||'')}"></div>
+  if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(ui.tab==='settings')render()})}
+  $('#main').innerHTML=`<div class="sec"><h3>Shelf version ${APP_VER}</h3></div>
   ${syncBox()}${pwBox()}
-  
   <div class="sec"><h3>Backup</h3><p class="note">Your books live only on this device. Export a backup now and then, and before clearing browser data or changing phone.</p>
-  <div class="setrow"><button class="btn p" data-act="exportjson">Export backup (JSON)</button><button class="btn" data-act="exportcsv">Export CSV</button></div>
+  <div class="setrow"><button class="btn" data-act="exportcsv">Export CSV</button></div>
   <div class="setrow"><label class="btn">Import backup<input type="file" id="impjson" accept=".json,application/json" hidden></label></div></div>
   <div class="sec"><h3>Import from Goodreads</h3><p class="note">On goodreads.com go to My Books, then Import and export, then Export Library. Pick the CSV here. Duplicates (same title and author) are skipped.</p>
   <div class="setrow"><label class="btn">Choose Goodreads CSV<input type="file" id="impgr" accept=".csv,text/csv" hidden></label></div></div>
   <div class="sec"><h3>This device</h3><div class="setrow"><button class="btn" data-act="persist">Ask browser to keep my data</button>${installEvt?'<button class="btn p" data-act="install">Install app</button>':''}</div>
   <p class="note">On Android Chrome: menu, then Add to Home screen (or Install app). ${db.books.length} books stored.</p>
-  <div class="setrow"><button class="btn d" data-act="wipe">Delete all data</button></div></div>`;
+  <div class="setrow"><button class="btn d" data-act="wipe">Delete all data</button></div></div>
+  ${advancedBox()}`;
 }
 
 /* ---------- Book sheet ---------- */
@@ -1142,10 +1178,10 @@ function onSignedIn(u){
   S.enabled=true;db.flags.cloud=db.flags.cloud||today();save();sync();
 }
 function scheduleSync(){if(!FB||!st.user||syncing)return;clearTimeout(syncT);syncT=setTimeout(()=>sync(),1500)}
-function setMsg(m){syncMsg=m;const e=$('#syncStatus');if(e)e.textContent=m}
+function setMsg(m){syncMsg=m;paintSync()}
 function syncBox(){
   const S=db.sync;let body;
-  if(st.configured===false)body='<p class="note">Sync is not switched on yet. To enable it, add your Firebase settings to the file firebase-config.js.</p>';
+  if(st.configured===false)body='<p class="note">Sync is not switched on yet. The setup is under Advanced, at the bottom of Settings.</p>';
   else if(st.error)body=`<p class="note">${esc(st.error)}</p>`;
   else if(!st.ready)body='<p class="note">Checking…</p>';
   else if(!st.user)body=`<p class="note">Sign in to keep your library in step across your devices. Your books stay on this phone either way.</p>
@@ -1153,10 +1189,10 @@ function syncBox(){
     <div class="f"><input id="syPass" type="password" autocomplete="current-password" placeholder="Password (6 characters or more)"></div>
     <div class="setrow"><button class="btn p" data-act="signin">Sign in</button><button class="btn" data-act="signup">Create account</button><button class="btn" data-act="resetpw">Forgot password</button></div>
     <div class="setrow"><button class="btn" data-act="google">Continue with Google</button></div>`;
-  else body=`<p class="note">Signed in as ${esc(st.user.email)}${st.user.emailVerified===false?' (not verified)':''}.<br><span id="syncStatus">${esc(syncMsg||(S.at?'Last synced '+new Date(S.at).toLocaleString('en-IE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'Not synced yet.'))}</span></p>
+  else body=`<p class="note">Signed in as ${esc(st.user.email)}${st.user.emailVerified===false?' (not verified)':''}.<br><span id="syncStatus">${esc(syncText())}</span></p>
     ${st.user.emailVerified===false?'<p class="note">Please verify your email so titles given to you can reach you. Check your inbox, then tap I have verified.</p><div class="setrow"><button class="btn" data-act="resendv">Resend email</button><button class="btn" data-act="checkv">I have verified</button></div>':''}
-    <div class="setrow"><button class="btn p" data-act="syncnow">Sync now</button><button class="btn" data-act="signout">Sign out</button></div>`;
-  return `<div class="sec"><h3>Sync across devices</h3>${body}${hhMsg?'<p class="note">'+esc(hhMsg)+'</p>':''}</div>`;
+    <div class="setrow"><button class="btn p" data-act="syncnow">Sync now</button><button class="btn" data-act="exportjson">Export backup (JSON)</button><button class="btn" data-act="signout">Sign out</button></div>`;
+  return `<div class="sec"><h3>Sync across devices</h3>${body}${body.includes('data-act="exportjson"')?'':'<div class="setrow"><button class="btn" data-act="exportjson">Export backup (JSON)</button></div>'}${hhMsg?'<p class="note">'+esc(hhMsg)+'</p>':''}</div>`;
 }
 function authErr(e){
   const c=(e&&e.code)||'';
@@ -1815,7 +1851,7 @@ function mergeFlags(a,b){
       new Set([...Object.keys(x),...Object.keys(y)]).forEach(i=>{v[i]=(k==='seen'||k==='tbest')?Math.max(+x[i]||0,+y[i]||0):(!x[i]?y[i]:!y[i]?x[i]:(x[i]<y[i]?x[i]:y[i]))});
     }else if(k==='title')v=mergeTitle(a[k],b[k]);
     else if(k==='dd'){const x=a[k]||'',y=b[k]||'';v=x>y?x:y}
-    else if(k==='nick'||k==='card'||k==='rn'||k==='favs'||k==='favt'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
+    else if(k==='nick'||k==='card'||k==='rn'||k==='view'||k==='favs'||k==='favt'){const x=a[k],y=b[k];v=!x?y:!y?x:((x.at||0)>=(y.at||0)?x:y)}
     else{const x=a[k],y=b[k];v=!x?y:!y?x:(x<y?x:y)}
     if(v!==undefined)o[k]=v;
   });
@@ -1868,7 +1904,7 @@ async function loadGrants(){
 }
 function ownerBox(){
   if(!st.user)return'';
-  if(!isOwner()){return st.owner?'':`<div class="sec"><h3>Account ID</h3><p class="note">Only needed to set up owner tools.<br><code style="word-break:break-all">${esc(st.user.uid)}</code></p></div>`}
+  if(!isOwner())return'';
   if(GRANTS===null&&!grantLoading&&FB)loadGrants();
   const list=Object.entries(GRANTS||{}).filter(([e,t])=>t.length).map(([e,t])=>`<div style="margin:8px 0"><b style="font-size:14px">${esc(e)}</b><div class="gchips">${t.map(k=>{const f=FLAIR.find(x=>x.k===k),th=k.startsWith('theme:')?THEMES[k.slice(6)]:null;return`<button class="btn gc" data-act="ungift" data-e="${esc(e)}" data-k="${esc(k)}">${esc(f?f.n:th?th.name+' (theme)':k)} ✕</button>`}).join('')}</div></div>`).join('');
   return`<div class="sec"><h3>Owner tools</h3><p class="note">Give a flair title or a theme to someone, using the email they sign in with. They get it the next time they sync.</p>
@@ -2306,12 +2342,13 @@ function cardBox(){
   <label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="hhShow"${cardOn()?' checked':''}> Show my rank, title and book counts on my card</label></div>`;
 }
 function refreshPreview(){const p=$('#pvcard');if(p)p.innerHTML=cardHTML(myCard(),1)}
+function goalBox(){const y=new Date().getFullYear();return`<div class="sec"><h3>Reading goal for ${y}</h3><input id="goal" type="number" min="0" inputmode="numeric" placeholder="Books this year" value="${esc(db.goals[y]||'')}"></div>`}
 /* Kay & Claude made this. Please keep the credit. */
 function renderProfile(keep){
   const y=window.scrollY;
   $('#tools').innerHTML='';
   if(!FB&&!st.tried){st.tried=true;fbInit().then(()=>{if(stab())render()})}
-  $('#main').innerHTML=`${cardBox()}${favBox()}${favtBox()}${titleLists()}${householdBox()}${themeBox()}${ownerBox()}`;
+  $('#main').innerHTML=`${cardBox()}${goalBox()}${favBox()}${favtBox()}${titleLists()}${householdBox()}${themeBox()}${ownerBox()}`;
   refreshPreview();
   if(keep)window.scrollTo(0,y);
 }
@@ -2406,6 +2443,7 @@ document.addEventListener('click',async e=>{
     case'tpclose':tqueue=[];popNext();break;
     case'exportjson':setFlag('exp');download('shelf-backup-'+today()+'.json',JSON.stringify({books:db.books,goals:db.goals}),'application/json');break;
     case'exportcsv':setFlag('exp');exportCSV();break;
+    case'view':setView(ds.v);break;
     case'persist':try{const ok=await navigator.storage.persist();toast(ok?'Browser will keep your data.':'Browser declined. Keep backups.')}catch(x){toast('Not supported here.')}break;
     case'chpw':changePw();break;
     case'undated':ui.status='undated';ui.tab='library';render();toast('Showing finished books with no finish date. Tap All to clear.');break;
@@ -2439,6 +2477,16 @@ document.addEventListener('input',e=>{
   else if(d&&t.dataset.f){const f=t.dataset.f;d[f]=f==='genres'?t.value.split(',').map(s=>s.trim()).filter(Boolean):(f==='cover'?t.value.trim():t.value)}
   else if(d&&t.dataset.read!==undefined){{const rr=d.reads[+t.dataset.read];rr[t.dataset.k]=t.value;delete rr.u}}
 });
+const VIEWS=[
+ ['l','List without images','<path d="M4 6h16M4 12h16M4 18h16"/>'],
+ ['li','List with images','<rect x="3" y="4" width="5" height="6" rx="1"/><rect x="3" y="14" width="5" height="6" rx="1"/><path d="M11 6h10M11 9h6M11 16h10M11 19h6"/>'],
+ ['gs','Smaller grid','<rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/>'],
+ ['gb','Bigger grid','<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>']
+];
+/* the choice is kept in the account flags, so it follows the person across devices */
+function libView(){const x=db.flags&&db.flags.view;return x&&VIEWS.some(v=>v[0]===x.v)?x.v:'li'}
+function viewBtns(){const c=libView();return`<div class="vws" role="group" aria-label="Library view">${VIEWS.map(v=>`<button data-act="view" data-v="${v[0]}" class="${v[0]===c?'on':''}" aria-label="${v[1]}" aria-pressed="${v[0]===c}" title="${v[1]}"><svg viewBox="0 0 24 24" aria-hidden="true">${v[2]}</svg></button>`).join('')}</div>`}
+function setView(v){if(!VIEWS.some(x=>x[0]===v))return;db.flags.view={v,at:Date.now()};persistLocal();scheduleSync();render()}
 const PP=[10,20,50,100];
 function perPage(){let n=0;try{n=+localStorage.getItem('shelf.pp')}catch(_){}return PP.includes(n)?n:20}
 /* Shelf: built by Kay and Claude. */
@@ -2446,6 +2494,7 @@ function renderLibraryList(){
   const l=filtered(),n=perPage(),pages=Math.max(1,Math.ceil(l.length/n));
   if(!ui.page||ui.page<0)ui.page=0;if(ui.page>=pages)ui.page=pages-1;
   const a=ui.page*n,sl=l.slice(a,a+n);
+  $('#lst').className='vw-'+libView();
   $('#lst').innerHTML=l.length?sl.map(card).join(''):`<div class="empty">${db.books.length?'Nothing on the shelf matches that.':`<span class="big">${T().big}</span>Your shelf is waiting for its first book.<br>Tap + to add one, or bring your Goodreads shelf over in Settings.`}</div>`;
   $('#pgr').innerHTML=l.length>10?`<div class="pgr"><span class="pgn">${a+1} to ${Math.min(a+n,l.length)} of ${l.length}</span>
     <div class="pgb"><button data-pg="-1" ${ui.page<=0?'disabled':''}>Previous</button><span>Page ${ui.page+1} of ${pages}</span><button data-pg="1" ${ui.page>=pages-1?'disabled':''}>Next</button></div>

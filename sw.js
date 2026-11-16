@@ -1,5 +1,5 @@
 /* Shelf service worker. Made by Kay and Claude. */
-const CACHE = 'shelf-v43';
+const CACHE = 'shelf-v44';
 const FILES = ['./', './index.html', './manifest.webmanifest', './firebase-config.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -9,7 +9,8 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      // Only touch Shelf's own caches. Musicbox, SavePoint and Libraries keep their offline copies.
+      .then(keys => Promise.all(keys.filter(k => k.startsWith('shelf-') && k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
