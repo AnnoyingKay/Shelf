@@ -970,7 +970,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=47;
+const APP_VER=48;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -1150,7 +1150,7 @@ function importGoodreads(text){
   const rows=parseCSV(text.replace(/^﻿/,''));if(rows.length<2){toast('That file looks empty.');return}
   const H=rows[0].map(s=>s.trim()),ix=n=>H.indexOf(n),g=(r,n)=>{const i=ix(n);return i<0?'':(r[i]||'').trim()};
   if(ix('Title')<0){toast('This does not look like a Goodreads export.');return}
-  const key=b=>(b.title+'|'+b.author).toLowerCase();const have=new Set(db.books.map(key));let n=0,skip=0;
+  const key=b=>(b.title+'|'+b.author).toLowerCase();const have=new Set(db.books.map(key));let n=0,skip=0,mine2=0;
   const dt=s=>s?s.replace(/\//g,'-'):'';
   const bind=s=>/kindle|ebook/i.test(s)?'Ebook':/audio/i.test(s)?'Audiobook':/hardcover/i.test(s)?'Hardcover':/paperback/i.test(s)?'Paperback':/comic|graphic/i.test(s)?'Graphic novel':'Paperback';
   rows.slice(1).forEach(r=>{
@@ -1158,9 +1158,10 @@ function importGoodreads(text){
     const shelf=g(r,'Exclusive Shelf'),st=shelf==='read'?'finished':shelf==='currently-reading'?'reading':'want';
     const b=newBook({title:g(r,'Title'),author:g(r,'Author'),isbn:(g(r,'ISBN13')||g(r,'ISBN')).replace(/[^0-9Xx]/g,''),rating:+g(r,'My Rating')||0,pages:g(r,'Number of Pages'),format:bind(g(r,'Binding')),status:st,review:g(r,'My Review'),notes:g(r,'Private Notes'),added:dt(g(r,'Date Added'))||today(),genres:g(r,'Bookshelves').split(',').map(s=>s.trim()).filter(s=>s&&!['read','to-read','currently-reading'].includes(s))});
     const dr=dt(g(r,'Date Read'));if(st==='finished')b.reads=[{start:'',end:dr}];if(st==='reading')b.reads=[{start:dt(g(r,'Date Added')),end:''}];
+    const ex=db.books.find(x=>x.pr===false&&key(x)===key(b));if(ex){ex.status=b.status;ex.rating=b.rating;ex.review=b.review;ex.notes=b.notes;ex.reads=b.reads;ex.pr=true;ex.added=ex.added||b.added;touch(ex);have.add(key(b));mine2++;return}
     if(have.has(key(b))){skip++;return}have.add(key(b));touch(b);db.books.push(b);n++;
   });
-  if(n>0)db.flags.gr=db.flags.gr||today();save();render();toast(`Imported ${n} book${n===1?'':'s'}${skip?`, skipped ${skip} duplicate${skip===1?'':'s'}`:''}.`);
+  if(n+mine2>0)db.flags.gr=db.flags.gr||today();save();render();toast(`Imported ${n} book${n===1?'':'s'}${mine2?`, added your data to ${mine2} shared book${mine2===1?'':'s'}`:''}${skip?`, skipped ${skip} duplicate${skip===1?'':'s'}`:''}.`);
 }
 function importJSON(text){
   try{const p=JSON.parse(text);if(!Array.isArray(p.books))throw 0;const m=new Map(db.books.map(b=>[b.id,b]));
