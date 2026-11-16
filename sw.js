@@ -1,5 +1,5 @@
 /* Shelf service worker. Made by Kay and Claude. */
-const CACHE = 'shelf-v46';
+const CACHE = 'shelf-v47';
 const FILES = ['./', './index.html', './manifest.webmanifest', './firebase-config.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

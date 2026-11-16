@@ -803,6 +803,18 @@ details.adv>summary::-webkit-details-marker{display:none}
 details.adv>summary h3{display:inline;margin:0}
 details.adv>summary::after{content:' ▾';color:var(--mute)}
 details.adv[open]>summary::after{content:' ▴'}
+#fill{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:12px}
+.fl-c{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:14px;max-width:460px;width:100%;margin:auto}
+.fl-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.fl-h span{flex:1;color:var(--mute);font-size:12px}
+.fl-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fl-two img{width:100%;max-height:200px;object-fit:contain;border-radius:8px;background:var(--soft)}
+.fl-two p{font-size:13px;margin:6px 0;overflow-wrap:anywhere}.fl-k{font-size:11px;text-transform:uppercase;color:var(--mute);margin-bottom:4px}
+.fl-nc{height:80px;display:flex;align-items:center;justify-content:center;background:var(--soft);border-radius:8px;color:var(--mute);font-size:12px}
+.fl-chk{display:flex;gap:6px;flex-wrap:wrap;font-size:12px}.fl-chk span{padding:2px 8px;border-radius:99px;border:1px solid var(--line)}.fl-y{color:var(--sage)}.fl-n{color:var(--danger)}
+.fl-b{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.fl-link{background:none;border:0;color:var(--accent);padding:6px 0;text-decoration:underline}
+#flo{width:100%;box-sizing:border-box;margin-top:6px}
+.stkseg{display:flex;gap:0;margin:0 0 10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.stkseg button{flex:1;padding:9px;background:var(--card);border:0;color:var(--ink)}.stkseg button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.stkgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stk{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;background:none;border:0;padding:4px;color:var(--ink)}.stk b{font-size:12px;line-height:1.2}.stk small{font-size:10px;color:var(--mute)}.stk.lk b{color:var(--mute)}
+.mstk{display:flex;gap:2px;margin-top:4px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -958,7 +970,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=46;
+const APP_VER=47;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -981,6 +993,7 @@ function renderSettings(){
   <div class="setrow"><label class="btn">Import backup<input type="file" id="impjson" accept=".json,application/json" hidden></label></div></div>
   <div class="sec"><h3>Import from Goodreads</h3><p class="note">On goodreads.com go to My Books, then Import and export, then Export Library. Pick the CSV here. Duplicates (same title and author) are skipped.</p>
   <div class="setrow"><label class="btn">Choose Goodreads CSV<input type="file" id="impgr" accept=".csv,text/csv" hidden></label></div></div>
+  ${fillBox()}
   <div class="sec"><h3>This device</h3><div class="setrow"><button class="btn" data-act="persist">Ask browser to keep my data</button>${installEvt?'<button class="btn p" data-act="install">Install app</button>':''}</div>
   <p class="note">On Android Chrome: menu, then Add to Home screen (or Install app). ${db.books.length} books stored.</p>
   <div class="setrow"><button class="btn d" data-act="wipe">Delete all data</button></div></div>
@@ -1452,8 +1465,47 @@ const FAV=[
  ['hitch','The Hitchhiker’s Guide to the Galaxy','Douglas Adams','adams',['hitchhiker s guide','hitchhikers guide','autoestopista galactico'],'f_hitch','Towel packed. Panic cancelled.'],
  ['patria','Patria','Fernando Aramburu','aramburu',['patria'],'f_patria','Two families, one village, and the long silence.']
 ];
-FAV.forEach(r=>TR.push({id:'f_'+r[0],n:r[0]==='miser'?'Planning a Revolution, es-tu?':r[1],k:'F',g:r[5],t:[1],d:`Finish ${r[1]} by ${r[2]}`,q:r[6],v:c=>rareHit(c,r)?1:0}));
+
 TR.push({id:'favs',n:'Own Shelf',k:'H',g:'heart',t:[3,7,13],u:'of Kay’s Favourites finished',q:'Your own shelf, and it shows.',v:c=>FAV.filter(r=>rareHit(c,r)).length});
+/* Stickers: one per Kay's favourite book. Fixed colours, no theme. They do not count towards ranks. */
+const STK_ART={
+miser:`<path d="M14 54h28M20 54V46h16v8" fill="#c9ccd1" stroke="#555b66" stroke-width="2"/><rect x="26" y="20" width="4" height="26" fill="#d9dce1" stroke="#555b66" stroke-width="2"/><path d="M24 20h8l-2-5h-4z" fill="#d9dce1" stroke="#555b66" stroke-width="2"/><path d="M28 6c4 4 4 7 0 9-4-2-4-5 0-9z" fill="#ffb02e" stroke="#c4701a" stroke-width="1.5"/><path d="M64 54h28M70 54V46h16v8" fill="#c9ccd1" stroke="#555b66" stroke-width="2" transform="translate(-14 0)"/><rect x="62" y="20" width="4" height="26" fill="#d9dce1" stroke="#555b66" stroke-width="2" transform="translate(-14 0)"/><path d="M62 20h8l-2-5h-4z" fill="#d9dce1" stroke="#555b66" stroke-width="2" transform="translate(-14 0)"/><path d="M62 6c4 4 4 7 0 9-4-2-4-5 0-9z" fill="#ffb02e" stroke="#c4701a" stroke-width="1.5" transform="translate(-14 0)"/>`,
+life:`<ellipse cx="40" cy="38" rx="20" ry="16" fill="#9a9aa0" stroke="#4a4a52" stroke-width="2.5"/><path d="M26 28L22 10l12 8M54 28l4-18-12 8" fill="#9a9aa0" stroke="#4a4a52" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="40" cy="46" rx="11" ry="8" fill="#e9dcc8" stroke="#4a4a52" stroke-width="2"/><circle cx="33" cy="33" r="2.5" fill="#222"/><circle cx="47" cy="33" r="2.5" fill="#222"/><circle cx="37" cy="46" r="1.4" fill="#222"/><circle cx="43" cy="46" r="1.4" fill="#222"/>`,
+cien:`<path d="M12 40C26 18 50 20 60 40 50 60 26 62 12 40z" fill="#f2c230" stroke="#a87a00" stroke-width="2.5"/><path d="M60 40l14-14v28z" fill="#e0aa14" stroke="#a87a00" stroke-width="2.5" stroke-linejoin="round"/><circle cx="26" cy="36" r="3" fill="#3b2a00"/><path d="M34 28c4 6 4 18 0 24M44 26c4 8 4 20 0 28" fill="none" stroke="#a87a00" stroke-width="1.8"/>`,
+hyp:`<path d="M40 70V40M40 44L24 30M40 36L56 24M40 52L58 44M40 56L22 48" fill="none" stroke="#7b8794" stroke-width="4" stroke-linecap="round"/><path d="M24 30l-8-4M56 24l8-6M58 44l8 0M22 48l-8 2M40 40V22" fill="none" stroke="#cfd6de" stroke-width="3" stroke-linecap="round"/><path d="M40 22l-3-8M40 22l3-8M24 30l-2-8M56 24l2-8M16 26l-4-6M64 18l4-4M66 44l6-4M14 50l-6 2" stroke="#e8edf2" stroke-width="2" stroke-linecap="round" fill="none"/><ellipse cx="40" cy="72" rx="16" ry="4" fill="#d8b17a" stroke="#8a6a3a" stroke-width="2"/>`,
+alg:`<ellipse cx="38" cy="44" rx="20" ry="13" fill="#fff" stroke="#8a8a92" stroke-width="2.5"/><circle cx="56" cy="38" r="9" fill="#fff" stroke="#8a8a92" stroke-width="2.5"/><circle cx="52" cy="22" r="7" fill="#ffd1dc" stroke="#8a8a92" stroke-width="2.5"/><circle cx="60" cy="24" r="6" fill="#ffd1dc" stroke="#8a8a92" stroke-width="2"/><circle cx="59" cy="36" r="2" fill="#c01a3b"/><circle cx="64" cy="40" r="1.8" fill="#ffb3c1"/><path d="M18 46C8 52 6 62 16 62" fill="none" stroke="#ffb3c1" stroke-width="3" stroke-linecap="round"/>`,
+hp:`<path d="M40 8l22 20-8 34H26L18 28z" fill="#d9232d" stroke="#7a0f16" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 8L26 62M40 8l14 54M18 28h44" fill="none" stroke="#f2808a" stroke-width="1.6"/><path d="M30 20l6 6" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>`,
+dcc:`<path d="M16 72V34Q16 14 40 14T64 34V72z" fill="#5a4636" stroke="#2b1f16" stroke-width="2.5"/><path d="M24 72V36Q24 22 40 22T56 36V72z" fill="#1b1410"/><path d="M40 28c-9 0-12 7-10 14l-2 8h24l-2-8c2-7-1-14-10-14z" fill="#efe9dc" stroke="#6b6254" stroke-width="2"/><circle cx="35" cy="38" r="3" fill="#1b1410"/><circle cx="45" cy="38" r="3" fill="#1b1410"/><path d="M35 50v6M40 50v6M45 50v6" stroke="#6b6254" stroke-width="2"/><path d="M20 20l-4-4M60 20l4-4M40 12V6" stroke="#9aa0a8" stroke-width="3" stroke-linecap="round"/>`,
+hobbit:`<circle cx="40" cy="42" r="30" fill="#3d8a3a" stroke="#1f4d1d" stroke-width="3"/><circle cx="40" cy="42" r="23" fill="#e04a2c" stroke="#7a2412" stroke-width="2.5"/><circle cx="40" cy="48" r="4.5" fill="#f2c230" stroke="#a87a00" stroke-width="1.6"/><path d="M40 20v44M17 42h46" stroke="#b9361d" stroke-width="1.5"/>`,
+lotr:`<circle cx="40" cy="44" r="22" fill="none" stroke="#a87a00" stroke-width="12"/><circle cx="40" cy="44" r="22" fill="none" stroke="#f2c230" stroke-width="8"/><path d="M26 30a20 20 0 0 1 14-6" fill="none" stroke="#fff3b0" stroke-width="3" stroke-linecap="round"/>`,
+cave:`<ellipse cx="40" cy="50" rx="17" ry="15" fill="#8a5a36" stroke="#4a2e18" stroke-width="2.5"/><ellipse cx="20" cy="28" rx="7" ry="9" fill="#8a5a36" stroke="#4a2e18" stroke-width="2.5" transform="rotate(-18 20 28)"/><ellipse cx="34" cy="18" rx="7" ry="9" fill="#8a5a36" stroke="#4a2e18" stroke-width="2.5" transform="rotate(-4 34 18)"/><ellipse cx="48" cy="18" rx="7" ry="9" fill="#8a5a36" stroke="#4a2e18" stroke-width="2.5" transform="rotate(4 48 18)"/><ellipse cx="62" cy="28" rx="7" ry="9" fill="#8a5a36" stroke="#4a2e18" stroke-width="2.5" transform="rotate(18 62 28)"/>`,
+ender:`<path d="M40 8L66 22v30L40 66 14 52V22z" fill="#16213e" stroke="#8fb4ff" stroke-width="2.5" stroke-linejoin="round"/><path d="M40 8v26M14 22l26 12 26-12M40 34v32" fill="none" stroke="#3b5aa8" stroke-width="1.6"/><path d="M40 28l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z" fill="#ffd84a" stroke="#a87a00" stroke-width="1.4" stroke-linejoin="round"/>`,
+hitch:`<rect x="12" y="20" width="56" height="42" rx="3" fill="#7ec8e3" stroke="#2f7fa0" stroke-width="2.5"/><path d="M12 30h56M12 40h56M12 50h56" stroke="#fff" stroke-width="3"/><path d="M12 62v8M20 62v8M28 62v8M36 62v8M44 62v8M52 62v8M60 62v8M68 62v8" stroke="#2f7fa0" stroke-width="2"/><text x="40" y="12" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="14" fill="#1b2a41">42</text>`,
+patria:`<circle cx="22" cy="54" r="14" fill="none" stroke="#2b2b2b" stroke-width="4"/><circle cx="58" cy="54" r="14" fill="none" stroke="#2b2b2b" stroke-width="4"/><path d="M22 54L36 54 30 32H20M36 54L50 30M30 32h22L58 54M50 30l-2-8h-6" fill="none" stroke="#2f7a4a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="54" r="2" fill="#2b2b2b"/><circle cx="58" cy="54" r="2" fill="#2b2b2b"/>`
+};
+const STK_BG={miser:'#fdf0d5',life:'#e7efe3',cien:'#fff3c4',hyp:'#e9e3f5',alg:'#e3eef7',hp:'#f6e1e1',dcc:'#e9e2d6',hobbit:'#e6f2dc',lotr:'#fbefc8',cave:'#efe2d3',ender:'#dfe6f5',hitch:'#e1f2f7',patria:'#e8efe6'};
+const STK_OBJ={miser:'Silver candlesticks',life:'A donkey',cien:'A little gold fish',hyp:'A thorn tree',alg:'A white mouse',hp:'A red stone',dcc:'A dungeon door',hobbit:'A round green door',lotr:'A plain gold ring',cave:'A bear paw print',ender:'A zero gravity cube',hitch:'A towel and a number',patria:'A bicycle'};
+function stickerSVG(id,locked,w){
+  const bg=STK_BG[id]||'#eee',w2=w||64;
+  const rot=((id.charCodeAt(0)+id.length*7)%9)-4;
+  if(locked)return`<svg viewBox="0 0 80 80" width="${w2}" height="${w2}" role="img" aria-label="Locked sticker"><circle cx="40" cy="40" r="35" fill="#e3e1dd" stroke="#bdb9b2" stroke-width="3" stroke-dasharray="5 4"/><text x="40" y="50" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#a8a39b">?</text></svg>`;
+  return`<svg viewBox="0 0 80 80" width="${w2}" height="${w2}" role="img" aria-label="${esc(STK_OBJ[id]||'Sticker')}"><g transform="rotate(${rot} 40 40)"><circle cx="40" cy="42" r="37" fill="rgba(0,0,0,.18)"/><circle cx="40" cy="40" r="37" fill="#fff"/><circle cx="40" cy="40" r="33" fill="${bg}"/><g transform="translate(40 40) scale(.62) translate(-40 -40)">${STK_ART[id]||''}</g></g></svg>`;
+}
+function stickerList(){
+  const c=mkCtx(null);
+  return FAV.map(r=>({id:r[0],name:r[1],by:r[2],q:r[6],got:rareHit(c,r)}));
+}
+function stickerIds(){try{return stickerList().filter(s=>s.got).map(s=>s.id)}catch(e){return[]}}
+function stickersHTML(){
+  const L=stickerList(),n=L.filter(s=>s.got).length;
+  return`<div class="sec"><h3>Stickers</h3><p class="note">${n} of ${L.length}. One for each of Kay’s favourite books, earned by finishing it with a finish date. Stickers do not count towards your rank.</p><div class="stkgrid">${L.map(s=>s.got?`<button class="stk" data-stk="${s.id}">${stickerSVG(s.id,false,72)}<b>${esc(s.name)}</b><small>${esc(s.by)}</small></button>`:`<div class="stk lk">${stickerSVG(s.id,true,72)}<b>Locked</b></div>`).join('')}</div></div>`;
+}
+function stkTabs(){const t=ui.tsub||'trophies';return`<div class="stkseg"><button data-tsub="trophies" class="${t==='trophies'?'on':''}">Trophies</button><button data-tsub="stickers" class="${t==='stickers'?'on':''}">Stickers</button></div>`}
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('[data-tsub]');if(a){ui.tsub=a.dataset.tsub;render();window.scrollTo(0,0);return}
+  const s=e.target.closest&&e.target.closest('[data-stk]');if(s){const x=stickerList().find(v=>v.id===s.dataset.stk);if(x)toast(`${STK_OBJ[x.id]}. ${x.q}`)}
+});
+
 const START=[];
 const TBY=Object.fromEntries(TR.map(t=>[t.id,t]));
 const lvlOf=(t,v)=>t.t.filter(x=>v>=x).length;
@@ -1580,13 +1632,12 @@ function renderTrophies(){
   const hidE=hid.filter(x=>x.lvl),holE=hol.filter(x=>x.lvl),rar=kind('R'),rarE=rar.filter(x=>x.lvl),fav=kind('F'),favE=fav.filter(x=>x.lvl);
   const shown=(l,all)=>all?l:l.filter(x=>x.lvl>0||x.val>0);
   titleTick();
-  $('#main').innerHTML=`${titleCard()}<div class="sec tsum"><div class="stat"><div><b>${earned.length}</b><span>trophies earned</span></div><div><b>${S.fin}</b><span>books finished</span></div></div>${rankBar(S)}</div>
+  $('#main').innerHTML=`${stkTabs()}${(ui.tsub||'trophies')==='stickers'?stickersHTML():titleCard()+`<div class="sec tsum"><div class="stat"><div><b>${earned.length}</b><span>trophies earned</span></div><div><b>${S.fin}</b><span>books finished</span></div></div>${rankBar(S)}</div>
   ${sec('Milestones',mil,'One for each rank. Finish a book with a finish date to count.')}
   ${sec('Reading',vol,'Reading volume. Only books with a finish date count.')}
   ${sec('Holidays and festivals',holE,'Each holiday trophy has three levels: read on the day, start and finish within it, and do it in three different years.')}
   ${sec('Hidden',hidE)}
-  ${sec('Kay’s Favourites',favE,'The books that mean the most. Finish one to unlock its heart.')}
-  ${sec('Rare finds',rarE,'Special books, quietly excellent and not famous. Finish one to unlock its bookplate.')}`;
+  ${sec('Rare finds',rarE,'Special books, quietly excellent and not famous. Finish one to unlock its bookplate.')}`}`;
   const lv={};S.items.forEach(x=>lv[x.t.id]=x.lvl);S.items.forEach(x=>{seen[x.t.id]=x.lvl});persistLocal();
   updateDot(true);
 }
@@ -1997,10 +2048,10 @@ const psig=b=>JSON.stringify([b.status,b.rating,b.review,b.notes,b.reads,b.progr
 const cardCfg=()=>db.flags.card||{};
 const cardTheme=()=>{const c=cardCfg().c;return c&&THEMES[c]?c:theme};
 const cardOn=()=>cardCfg().on!==0;
-function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};{const fb=favBooks();if(fb.length)c.b=fb.map(favSmall);const ft=favtSmall();if(ft.length)c.h=ft}if(cardOn()){const S=trophyState(),m=mine(S),yy=String(new Date().getFullYear());c.r=m.rank;c.f=m.flair||'';c.p=S.fin||0;c.y={y:yy,n:(S.Y&&S.Y[yy])||0}}return c}
-const sameCard=(a,b)=>['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''))&&JSON.stringify((a||{}).b||[])===JSON.stringify((b||{}).b||[])&&JSON.stringify((a||{}).h||[])===JSON.stringify((b||{}).h||[])&&((a||{}).p??'')===((b||{}).p??'')&&JSON.stringify((a||{}).y||{})===JSON.stringify((b||{}).y||{});
+function myCard(){const c={n:nickOf()||hhName(),k:cardTheme()};{const fb=favBooks();if(fb.length)c.b=fb.map(favSmall);const ft=favtSmall();if(ft.length)c.h=ft}if(cardOn()){const S=trophyState(),m=mine(S),yy=String(new Date().getFullYear());c.r=m.rank;c.f=m.flair||'';c.s=stickerIds();c.p=S.fin||0;c.y={y:yy,n:(S.Y&&S.Y[yy])||0}}return c}
+const sameCard=(a,b)=>JSON.stringify((a||{}).s||[])===JSON.stringify((b||{}).s||[])&&['n','k','r','f','t'].every(k=>((a||{})[k]??'')===((b||{})[k]??''))&&JSON.stringify((a||{}).b||[])===JSON.stringify((b||{}).b||[])&&JSON.stringify((a||{}).h||[])===JSON.stringify((b||{}).h||[])&&((a||{}).p??'')===((b||{}).p??'')&&JSON.stringify((a||{}).y||{})===JSON.stringify((b||{}).y||{});
 function cardHTML(c,you){const T=THEMES[c.k]||THEMES.nook,d=T.dots,h=d[2].replace('#',''),L=h.length===6?(0.299*parseInt(h.slice(0,2),16)+0.587*parseInt(h.slice(2,4),16)+0.114*parseInt(h.slice(4,6),16)):255,tx=L>140?'#2b2118':'#f5efe6';
-  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span>${c.p!=null?`<span>${c.p} ${c.p===1?'book':'books'} read${c.y?` · ${c.y.n} in ${esc(c.y.y)}`:''}</span>`:`<span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`}`:''}${c.b&&c.b.length?`<div class="mfav">${c.b.slice(0,3).map(miniBook).join('')}</div>`:''}${c.h&&c.h.length?`<div class="mfav">${c.h.slice(0,3).map(miniTro).join('')}</div>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
+  return`<div class="mcard" style="background:${d[2]};color:${tx};border-color:${d[0]};box-shadow:inset 6px 0 0 ${d[1]}"><b>${esc(c.n||'Member')}${you?' (you)':''}</b>${c.r?`<span>${esc(c.r)}${c.f?' · '+esc(c.f):''}</span>${c.p!=null?`<span>${c.p} ${c.p===1?'book':'books'} read${c.y?` · ${c.y.n} in ${esc(c.y.y)}`:''}</span>`:`<span>${esc(c.t)} ${c.t===1?'trophy':'trophies'}</span>`}`:''}${c.b&&c.b.length?`<div class="mfav">${c.b.slice(0,3).map(miniBook).join('')}</div>`:''}${c.h&&c.h.length?`<div class="mfav">${c.h.slice(0,3).map(miniTro).join('')}</div>`:''}${(c.s||[]).length?`<span class="mstk">${c.s.map(i=>stickerSVG(i,false,22)).join('')}</span>`:''}<i class="mpic" aria-hidden="true">${T.icon||''}</i></div>`}
 let HH=null,hhBusy=false,hhInv=[],hhMsg='';
 function hhTouch(b){
   const S=db.sync;if(!S.hid)return;S.hdirty=S.hdirty||{};
@@ -2519,6 +2570,108 @@ function genreSel(){
   return`<select id="gen"><option value="all">All genres</option>${[...set.values()].sort((a,b)=>a.localeCompare(b)).map(g=>`<option ${ui.genre===g?'selected':''}>${esc(g)}</option>`).join('')}</select>`;
 }
 function ownChip(){const n=db.books.filter(b=>b.own==='?').length;return n?`<button data-own="1" class="${ui.own?'on':''}">To confirm ${n}</button>`:''}
+/* Online pass: fills blank covers and details, one book at a time. Never overwrites what you typed. */
+const FILL={on:false,q:[],i:0,n:0,cands:[],ci:0,oth:false,st:{auto:0,yes:0,no:0,oth:0,none:0},msg:''};
+const fnrm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').replace(/^(the|el|la|los|las|le|les|un|una|der|die|das|il) /,'').trim();
+const fsleep=ms=>new Promise(r=>setTimeout(r,ms));
+const FLN={english:'en',spanish:'es',espanol:'es',castellano:'es',french:'fr',german:'de',portuguese:'pt',italian:'it',catalan:'ca'};
+const fComic=b=>/Coleccion_Comics/i.test(b.src||'')||/comic|manga|graphic/i.test((b.format||'')+' '+(b.genres||[]).join(' '));
+function fLang(b){if(b.lang)return b.lang;const m=/Language:\s*([^\n]+)/i.exec(b.notes||'');if(!m)return'';const k=fnrm(m[1]).split(' ')[0];return FLN[k]||''}
+function fNeeds(b){return!b.chk&&(!b.cover||!(b.genres||[]).length||!b.pages||!b.isbn)}
+function fQueue(){const a=db.books.filter(fNeeds);return a.filter(b=>!fComic(b)).concat(a.filter(fComic)).map(b=>b.id)}
+function fScore(b,c,lg){
+  const bt=fnrm(b.title),ct=fnrm(c.title),ct0=fnrm(String(c.title||'').split(':')[0]);
+  const tx=bt&&(ct===bt||ct0===bt);
+  const ba=fnrm(b.author).split(' ').filter(w=>w.length>1),ca=fnrm(c.author).split(' ').filter(w=>w.length>1);
+  const sh=ba.filter(w=>ca.includes(w)).length,ax=ba.length>0&&sh>=Math.min(2,ba.length,ca.length||9);
+  const lx=!lg||c.lang===lg;
+  return{tx,ax,lx,fit:tx&&ax&&lx,s:(tx?4:0)+(ax?2:0)+(lx?1:0)+(c.cover?.5:0)};
+}
+async function fFind(b){
+  const lg=fLang(b),t=String(b.title||'').trim(),au=String(b.author||'').trim();
+  if(!t)return{c:[]};
+  const gq='intitle:'+encodeURIComponent(t)+(au?'+inauthor:'+encodeURIComponent(au):''),oq='title='+encodeURIComponent(t)+(au?'&author='+encodeURIComponent(au):'');
+  let reached=0;const ok=p=>p.then(v=>{reached++;return v},()=>[]);
+  let [g,o]=await Promise.all([ok(gbSearch(gq,lg||'any')),ok(olSearch(oq,lg||'any'))]);
+  let all=g.concat(o);
+  if(!all.length&&lg){[g,o]=await Promise.all([ok(gbSearch(gq,'any')),ok(olSearch(oq,'any'))]);all=g.concat(o)}
+  if(!reached)return{err:'Could not reach the book databases. Check your connection, then start again.'};
+  const seen=new Set(),c=[];
+  all.forEach(r=>{if(!r||!r.title)return;const k=fnrm(r.title)+'|'+fnrm(r.author);if(seen.has(k))return;seen.add(k);c.push(Object.assign({},r,fScore(b,r,lg)))});
+  c.sort((x,y)=>y.s-x.s);
+  return{c:c.slice(0,6),lg};
+}
+function fApply(b,c){
+  if(!b.cover&&c.cover)b.cover=c.cover;
+  if(!b.pages&&c.pages)b.pages=c.pages;
+  if(!b.isbn&&c.isbn)b.isbn=c.isbn;
+  if(!(b.genres||[]).length&&(c.subjects||[]).length)b.genres=c.subjects.slice();
+  if(!b.author&&c.author)b.author=c.author;
+  if(!b.lang&&c.lang)b.lang=c.lang;
+  b.chk='ok';save();
+}
+function fLeft(){return Math.max(0,FILL.q.length-FILL.i)}
+function fHead(){return`<div class="fl-h"><b>Online pass</b><span>${FILL.i} of ${FILL.q.length} checked · ${FILL.st.auto} filled automatically</span><button class="btn" data-fa="x">Pause</button></div>`}
+function fPaint(html){
+  let o=document.getElementById('fill');if(!o){o=document.createElement('div');o.id='fill';document.body.appendChild(o)}
+  o.innerHTML=`<div class="fl-c">${html}</div>`;
+}
+function fClose(){const o=document.getElementById('fill');if(o)o.remove();if(ui.tab==='settings')render()}
+function fAsk(){
+  const b=db.books.find(x=>x.id===FILL.q[FILL.i]),c=FILL.cands[FILL.ci];if(!b||!c){FILL.ci=0;return fNext()}
+  const lg=fLang(b),f=(ok,y,n)=>`<span class="fl-${ok?'y':'n'}">${ok?y:n}</span>`;
+  const more=FILL.cands.length>1?`<button class="fl-link" data-fa="alt">Show another match (${FILL.ci+1} of ${FILL.cands.length})</button>`:'';
+  fPaint(`${fHead()}
+  <div class="fl-two"><div><div class="fl-k">In your library</div>${b.cover?`<img src="${esc(b.cover)}" alt="">`:'<div class="fl-nc">No cover</div>'}<p><b>${esc(b.title)}</b><br>${esc(b.author||'No author')}${b.series?'<br>'+esc(b.series):''}${lg?'<br>Language: '+esc(lg):''}</p></div>
+  <div><div class="fl-k">Found online</div>${c.cover?`<img src="${esc(c.cover)}" alt="">`:'<div class="fl-nc">No cover</div>'}<p><b>${esc(c.title)}</b><br>${esc(c.author||'No author')}${c.lang?'<br>Language: '+esc(c.lang):''}${c.pages?'<br>'+esc(c.pages)+' pages':''}${c.isbn?'<br>ISBN '+esc(c.isbn):''}${(c.subjects||[]).length?'<br>'+esc(c.subjects.join(', ')):''}</p></div></div>
+  <p class="fl-chk">${f(c.tx,'Title matches','Title differs')} ${b.author?f(c.ax,'Author matches','Author differs'):'<span class="fl-n">No author to compare</span>'} ${lg?f(c.lx,'Language matches','Language differs'):''}</p>
+  <p class="note">Does this fit? Only blank fields are filled. Nothing you typed is changed.</p>
+  <div class="fl-b"><button class="btn p" data-fa="yn">Yes, next</button><button class="btn" data-fa="nn">No, next</button><button class="btn p" data-fa="ys">Yes, stop</button><button class="btn" data-fa="ns">No, stop</button></div>
+  ${FILL.oth?`<textarea id="flo" rows="2" placeholder="Your note on this book"></textarea><div class="fl-b"><button class="btn p" data-fa="os">Save note, next</button></div>`:'<div class="fl-b"><button class="btn" data-fa="oth">Other…</button></div>'}
+  ${more}`);
+}
+function fDone(){FILL.on=false;const s=FILL.st;fPaint(`<div class="fl-h"><b>Online pass</b></div><p>${FILL.i>=FILL.q.length&&FILL.q.length?'Finished.':'Stopped.'} ${s.auto} filled automatically, ${s.yes} confirmed by you, ${s.no} declined, ${s.oth} with your note, ${s.none} with no match. ${fLeft()} left.</p><div class="fl-b"><button class="btn p" data-fa="close">Close</button></div>`)}
+async function fNext(){
+  FILL.oth=false;
+  while(FILL.on&&FILL.i<FILL.q.length){
+    const b=db.books.find(x=>x.id===FILL.q[FILL.i]);if(!b||b.chk){FILL.i++;continue}
+    fPaint(`${fHead()}<p>Searching for <b>${esc(b.title)}</b>…</p>`);
+    const r=await fFind(b);if(!FILL.on)return;
+    if(r.err){FILL.on=false;fPaint(`<div class="fl-h"><b>Online pass</b></div><p>${esc(r.err)}</p><div class="fl-b"><button class="btn p" data-fa="close">Close</button></div>`);return}
+    if(!r.c.length){b.chk='no';save();FILL.st.none++;FILL.i++;await fsleep(250);continue}
+    if(r.c[0].fit&&!fComic(b)){fApply(b,r.c[0]);FILL.st.auto++;FILL.i++;await fsleep(250);continue}
+    FILL.cands=r.c;FILL.ci=0;fAsk();return;
+  }
+  fDone();
+}
+function fStart(){FILL.q=fQueue();FILL.i=0;FILL.on=true;FILL.st={auto:0,yes:0,no:0,oth:0,none:0};if(!FILL.q.length){toast('Nothing left to check.');return}fNext()}
+function fAnswer(a){
+  const b=db.books.find(x=>x.id===FILL.q[FILL.i]);if(!b)return;
+  if(a==='alt'){FILL.ci=(FILL.ci+1)%FILL.cands.length;return fAsk()}
+  if(a==='oth'){FILL.oth=true;return fAsk()}
+  if(a==='yn'||a==='ys'){fApply(b,FILL.cands[FILL.ci]);FILL.st.yes++}
+  else if(a==='nn'||a==='ns'){b.chk='no';save();FILL.st.no++}
+  else if(a==='os'){const t=(document.getElementById('flo')||{}).value||'';b.chk='oth';b.chkn=t.trim();save();FILL.st.oth++}
+  FILL.i++;
+  if(a==='ys'||a==='ns'){FILL.on=false;return fDone()}
+  fNext();
+}
+function fillBox(){
+  const need=db.books.filter(fNeeds).length,no=db.books.filter(b=>b.chk==='no').length,oth=db.books.filter(b=>b.chk==='oth').length;
+  return`<div class="sec"><h3>Covers and details online</h3><p class="note">Goes through your books and fills blank covers, pages, ISBN and genres from Open Library and Google Books. It checks title, author and language. A full match is filled automatically. Anything else, and every comic and manga, asks you first. Nothing you typed is overwritten.</p>
+  <p class="note"><b>${need}</b> book${need===1?'':'s'} to check.${no?` ${no} declined.`:''}${oth?` ${oth} with your notes.`:''}</p>
+  <div class="setrow"><button class="btn p" data-fa="start"${need?'':' disabled'}>Start the pass</button>${no?'<button class="btn" data-fa="redo">Check the declined ones again</button>':''}${oth?'<button class="btn" data-fa="copy">Copy my notes</button>':''}</div></div>`;
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest&&e.target.closest('[data-fa]');if(!t)return;const a=t.dataset.fa;
+  if(a==='start')fStart();
+  else if(a==='x'){FILL.on=false;fDone()}
+  else if(a==='close')fClose();
+  else if(a==='redo'){db.books.forEach(b=>{if(b.chk==='no')delete b.chk});save();render()}
+  else if(a==='copy'){const s=db.books.filter(b=>b.chk==='oth').map(b=>b.title+' | '+(b.author||'')+' | '+(b.chkn||'')).join('\n');(navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).then(()=>toast('Notes copied.'),()=>toast('Could not copy.'))}
+  else fAnswer(a);
+});
+
 const PP=[10,20,50,100];
 function perPage(){let n=0;try{n=+localStorage.getItem('shelf.pp')}catch(_){}return PP.includes(n)?n:20}
 /* Shelf: built by Kay and Claude. */
