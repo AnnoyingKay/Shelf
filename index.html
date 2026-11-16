@@ -970,7 +970,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=49;
+const APP_VER=51;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -1754,7 +1754,8 @@ const finN=()=>myBooks().filter(b=>!b.rep&&isFin(b)).length;
 const kwHit=(b,id)=>{const t=(b.genres||[]).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),f=(b.format||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return KW[id].some(k=>t.includes(k))||(id==='comic'&&/comic|manga|graphic|historieta|novela grafica/.test(f))};
 const gCount=id=>myBooks().filter(b=>!b.rep&&isFin(b)&&kwHit(b,id)).length;
 function inSeason(id){const d=new Date(),m=d.getMonth()+1,day=d.getDate();if(id==='hallow')return m===10||(m===11&&day<=2);if(id==='yule')return m===12||(m===1&&day<=6);if(id==='sobremesa')return m===10;if(id==='brigid'||id==='valentine')return m===2;if(id==='patrick')return m===3;return false}
-const verified=()=>!!(st.user&&st.user.emailVerified);
+const gOK=u=>!!(u&&(u.emailVerified||(u.providerData||[]).some(p=>p.providerId==='google.com')));
+const verified=()=>gOK(st.user);
 const RULES={
  nook:{need:'',ok:()=>true},
  cat:{need:'Finish 3 books, with a finish date',ok:()=>finN()>=3},
@@ -2069,7 +2070,7 @@ async function hhFind(F,fs){
   if(found){if(S.hid!==found.id){S.hid=found.id;S.hlast=0;S.hdirty={};S.htomb={}}}
   else if(S.hid){S.hid='';S.hlast=0;hhDetach()}
   hhInv=[];
-  if(!found&&u.emailVerified&&u.email){
+  if(!found&&gOK(u)&&u.email){
     const r=await F.getDocs(F.query(F.collection(fs,'households'),F.where('invited','array-contains',u.email.toLowerCase())));
     r.forEach(d=>hhInv.push({id:d.id,...d.data()}));
   }
@@ -2115,10 +2116,10 @@ async function hhSync(F,fs){
 function hhDelete(b){const S=db.sync;if(S.hid&&b.hh){S.htomb[b.id]=Date.now();S.hdirty[b.id]=1}}
 function hhShareAll(){const S=db.sync;db.books.forEach(b=>{if(b.pr===false)return;b.hh=1;b.pr=true;b.hsig=hsig(b);b.hat=Date.now();b.psig=psig(b);S.hdirty[b.id]=1;S.dirty[b.id]=1})}
 async function hhAct(kind,arg){
-  const f=await fbInit();if(!f||!st.user)return;
-  if(!st.user.emailVerified){toast('Verify your email first. Then households can be used.');return}
+  const f=await fbInit();if(!f){toast('Sync is not set up on this device.');return}if(!st.user){toast('Sign in first.');return}
+  if(!gOK(st.user)){toast('Verify your email first. Then households can be used.');return}
   const F=f.F,fs=f.fs,S=db.sync,u=st.user;S.hdirty=S.hdirty||{};S.htomb=S.htomb||{};
-  if(hhBusy)return;hhBusy=true;
+  if(hhBusy&&Date.now()-(window.hhBusyAt||0)<20000){toast('Still working on the last step. Give it a moment.');return}hhBusy=true;window.hhBusyAt=Date.now();if(kind==='join')toast('Joining…');
   try{
     if(kind==='create'){
       const ref=F.doc(F.collection(fs,'households'));
@@ -2137,7 +2138,7 @@ async function hhAct(kind,arg){
     }else if(kind==='uninvite'){
       await F.updateDoc(F.doc(fs,'households',S.hid),{invited:F.arrayRemove(arg)});
     }else if(kind==='join'){
-      const h=hhInv.find(x=>x.id===arg);if(!h){hhBusy=false;return}
+      const h=hhInv.find(x=>x.id===arg);if(!h){hhBusy=false;toast('That invitation is no longer available. Pull to refresh and try again.');return}
       const n=myBooks().length,share=n&&confirm('Add the '+n+' books on this shelf to the shared library? Choose Cancel to keep them private.');
       await F.updateDoc(F.doc(fs,'households',arg),{members:F.arrayUnion(u.uid),invited:F.arrayRemove(u.email.toLowerCase()),['names.'+u.uid]:hhName()});
       S.hid=arg;S.hlast=0;if(share)hhShareAll();else db.books.forEach(b=>b.np=1);try{notify('hh:join:'+arg,'You have joined '+(h.name||'a household')+'. Shared books count for you once you add your own status, dates or rating.','👥')}catch(e){}toast('Joined. Shared books are arriving. They count for you only once you add your own status, dates or rating.');
@@ -2151,7 +2152,7 @@ async function hhAct(kind,arg){
       db.books.forEach(b=>S.dirty[b.id]=1);
     }
     save();
-  }catch(e){toast(e&&e.code==='permission-denied'?'Not allowed. Check the household rules in Firebase.':'That did not work. Try again.')}
+  }catch(e){toast(e&&e.code==='permission-denied'?'Not allowed. Check the household rules in Firebase.':'That did not work'+(e&&(e.code||e.message)?' ('+String(e.code||e.message).slice(0,60)+')':'')+'. Try again.');console.warn(e)}
   hhBusy=false;await sync(true);render();
 }
 /* Created by Kay & Claude. */
@@ -2176,7 +2177,7 @@ function renderHousehold(){
 }
 function householdBox(){
   const S=db.sync;if(!st.user||st.configured===false)return'';
-  if(!st.user.emailVerified)return`<div class="sec"><h3>Household</h3><p class="note">Verify your email address to share a library with friends or family.</p></div>`;
+  if(!gOK(st.user))return`<div class="sec"><h3>Household</h3><p class="note">Verify your email address to share a library with friends or family. Check your inbox, then tap I have verified.</p><div class="setrow"><button class="btn" data-act="resendv">Resend email</button><button class="btn" data-act="checkv">I have verified</button></div></div>`;
   let b;
   if(S.hid)b=`<p class="note">You are in ${HH?esc(HH.name||'a household'):'a household'}. Members, invitations and sharing are in the Household tab.</p><div class="setrow"><button class="btn p" data-tab="household">Open Household</button></div>`;
   else if(hhInv.length){
