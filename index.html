@@ -970,7 +970,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=48;
+const APP_VER=49;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -2512,8 +2512,8 @@ document.addEventListener('click',async e=>{
     case'ddhide':ui.ddHide=true;render();break;
     case'hhcreate':hhAct('create');break;
     case'hhinvite':hhAct('invite',($('#hhEmail')||{}).value);break;
-    case'hhuninv':hhAct('uninvite',d.e);break;
-    case'hhjoin':hhAct('join',d.id);break;
+    case'hhuninv':hhAct('uninvite',ds.e);break;
+    case'hhjoin':hhAct('join',ds.id);break;
     case'hhleave':hhAct('leave');break;
     case'hhrename':hhAct('rename');break;
     case'bell':openBell();break;
