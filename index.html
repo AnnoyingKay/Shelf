@@ -961,6 +961,7 @@ function renderLibStats(){
   const addedBy=tally(b=>nm(who(b)),6);
   const key=b=>fnrm0(b.title)+'|'+fnrm0(b.author),cnt={};B.forEach(b=>{const k=key(b);if(fnrm0(b.title))cnt[k]=(cnt[k]||0)+1});
   const dups=Object.entries(cnt).filter(x=>x[1]>1),onrep=B.filter(b=>b.rep).length;
+  const spent={};B.forEach(b=>{const p=+b.price;if(p>0){const c=b.cur||'EUR';spent[c]=spent[c]||{s:0,n:0};spent[c].s+=p;spent[c].n++}});
   const miss=[['No cover',B.filter(b=>!b.cover).length],['No pages',B.filter(b=>!(+b.pages>0)).length],['No genres',B.filter(b=>!(b.genres||[]).length).length],['No author',B.filter(b=>!String(b.author||'').trim()).length]].filter(x=>x[1]);
   $('#main').innerHTML=`${statTabs()}<div class="sec"><div class="stat"><div><b>${N.toLocaleString('en-IE')}</b><span>books in the library</span></div><div><b>${authors.toLocaleString('en-IE')}</b><span>authors</span></div><div><b>${series.toLocaleString('en-IE')}</b><span>series</span></div><div><b>${pages.toLocaleString('en-IE')}</b><span>pages${withP<N?' ('+withP+' books have a page count)':''}</span></div></div></div>
   <div class="sec"><h3>By status</h3>${hb(stat)}</div>
@@ -973,6 +974,7 @@ function renderLibStats(){
   <div class="sec"><h3>Top authors</h3>${hb(tally(b=>b.author,8))}</div>
   <div class="sec"><h3>Biggest series</h3>${hb(tally(b=>b.series,8))}</div>
   <div class="sec"><h3>Added per year</h3>${hb(Object.entries(yrs).sort((a,b)=>b[0]-a[0]))}</div>
+  ${Object.keys(spent).length?`<div class="sec"><h3>Spent</h3>${hb(Object.entries(spent).map(([c,v])=>[c+' ('+v.n+' books)',Math.round(v.s*100)/100]))}<p class="note">Only books with a price paid. Free books and books with no price are left out.</p></div>`:''}
   ${miss.length?`<div class="sec"><h3>Missing details</h3>${hb(miss)}<p class="note">The online pass in Settings can fill covers, pages and genres.</p></div>`:''}`;
 }
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-ssub]');if(a){ui.ssub=a.dataset.ssub;render();window.scrollTo(0,0)}});
@@ -1020,7 +1022,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=54;
+const APP_VER=55;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -1078,11 +1080,13 @@ function drawForm(keepScroll){
   <div class="g2"><div class="f"><label>Series</label><input data-f="series" value="${esc(d.series)}"></div><div class="f"><label>Number in series</label><input data-f="seriesNo" inputmode="decimal" value="${esc(d.seriesNo)}"></div></div>
   <div class="f"><label>Genres and tags (comma separated)</label><input data-f="genres" value="${esc(d.genres.join(', '))}"></div>
   <div class="f"><label>ISBN</label><input data-f="isbn" inputmode="numeric" value="${esc(d.isbn)}"></div>
-  <details class="sec"${(d.edition||d.rel||d.bought||d.copies)?' open':''}><summary><b>Edition details</b> (optional)</summary>
+  <details class="sec"${(d.edition||d.rel||d.bought||d.copies||d.price)?' open':''}><summary><b>Edition details</b> (optional)</summary>
   <div class="f"><label>Edition</label><input data-f="edition" value="${esc(d.edition)}" placeholder="For example: First edition, or Penguin Classics 2003" autocomplete="off"></div>
   <div class="g2"><div class="f"><label>Physical release date</label><input data-f="rel" value="${esc(d.rel)}" placeholder="2003, 2003-05 or 2003-05-14" autocomplete="off"></div>
   <div class="f"><label>Copies you own</label><input type="number" inputmode="numeric" min="0" data-f="copies" value="${esc(d.copies)}"></div></div>
-  <div class="f"><label>Date of purchase (physical copies)</label><input type="date" data-f="bought" value="${esc(d.bought)}"></div></details>
+  <div class="g2"><div class="f"><label>Date of purchase</label><input type="date" data-f="bought" value="${esc(d.bought)}"></div>
+  <div class="f"><label>Price paid</label><input type="number" inputmode="decimal" step="0.01" min="0" data-f="price" value="${esc(d.price===undefined?'':d.price)}"></div></div>
+  <div class="f"><label>Currency</label><select data-f="cur">${['EUR','USD','GBP'].map(c=>`<option ${(d.cur||'EUR')===c?'selected':''}>${c}</option>`).join('')}</select></div></details>
   <div class="f"><label>Cover image URL</label><input data-f="cover" value="${d.cover.startsWith('data:')?'':esc(d.cover)}" placeholder="${d.cover.startsWith('data:')?'Custom image set':'https://…'}"><div class="setrow"><label class="btn">Choose image from phone<input type="file" id="covfile" accept="image/*" hidden></label>${d.cover?'<button class="btn" data-act="nocover">Remove cover</button>':''}</div></div>
   ${ownBox()}
   <div class="f"><label>Review</label><textarea data-f="review">${esc(d.review)}</textarea></div>
@@ -1217,9 +1221,9 @@ function importJSON(text){
   try{const p=JSON.parse(text);if(!Array.isArray(p.books))throw 0;const m=new Map(db.books.map(b=>[b.id,b]));
     /* books that carry a source (spreadsheet imports) are skipped when the title is already on the shelf, or when they were imported before */
     const nk=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-    const have=new Set(db.books.map(b=>nk(b.title)));let n=0,skip=0;
-    p.books.forEach(b=>{const nb=newBook(b);if(nb.src&&(m.has(nb.id)||have.has(nk(nb.title)))){skip++;return}touch(nb);m.set(nb.id,nb);n++});
-    db.books=[...m.values()];db.goals=Object.assign(db.goals,p.goals||{});save();render();toast(skip?`Imported ${n}, skipped ${skip} already on your shelf.`:'Backup imported.')}
+    const have=new Set(db.books.map(b=>nk(b.title)));let n=0,skip=0,merged=0;
+    p.books.forEach(b=>{const nb=newBook(b);if(nb.src&&(m.has(nb.id)||have.has(nk(nb.title)))){if(!m.has(nb.id)&&nb.price!==undefined){const ex=db.books.find(x=>nk(x.title)===nk(nb.title));if(ex&&ex.price===undefined&&!ex.bought){ex.bought=nb.bought||ex.bought;ex.price=nb.price;ex.cur=nb.cur;ex.notes=(ex.notes?ex.notes+'\n':'')+String(nb.notes||'').split('\n').slice(1).join('\n');touch(ex);merged++}}skip++;return}touch(nb);m.set(nb.id,nb);n++});
+    db.books=[...m.values()];db.goals=Object.assign(db.goals,p.goals||{});save();render();toast(skip?`Imported ${n}, skipped ${skip} already on your shelf${merged?`, added purchase details to ${merged}`:''}.`:'Backup imported.')}
   catch(e){toast('Could not read that backup file.')}
 }
 

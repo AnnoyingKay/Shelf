@@ -8,7 +8,7 @@ Live version: https://annoyingkay.github.io/Shelf/
 
 - Keeps a library of books with status (want to read, reading, finished), reading dates, rereads, ratings, reviews, notes and quotes.
 - Adds books by scanning the barcode, searching online (Open Library) or typing them in.
-- Records format, pages, series, tags, edition, physical release date, copies owned and date of purchase.
+- Records format, pages, series, tags, edition, physical release date, copies owned, date of purchase and price paid.
 - Marks books "On repeat" for children's books or favourites read again and again. These are kept out of goals, stats and trophies.
 - Shows reading stats for a year or for all years, with the list of books read, books read more than once, a reading goal, and a list of finished books that have no finish date. A second Library view covers everything collected: status, ownership, formats, genres, languages, authors, series, who added each book, repeated titles and missing details. A finished book needs a finish date to count towards stats, goals and trophies. Trophies already earned are kept.
 - Awards ranks and trophies, with a bell for notices. Ranks come from books finished with a finish date. Library trophies count what you add, rate and review. Finish trophies need a finish date. Each of Kay's favourite books has a sticker, kept in its own Stickers tab inside Trophies. Stickers do not count towards ranks.
@@ -91,6 +91,7 @@ Each release adds a line here. The version number shows at the bottom of Setting
 
 | Version | What changed |
 | --- | --- |
+| 55 | Price paid and currency on each book, next to date of purchase. Library stats show what you spent. A JSON import adds purchase details to books already on the shelf. |
 | 54 | Owner tools can give several flairs and themes at once. Reading stats gain an All years button, a list of books read for the chosen period and a Read more than once list. Library stats show who added each book and repeated titles. Books remember who added them. |
 | 53 | Trophies reinstated: library trophies (Moving In, Shelf Builder, Fair Critic, Pen Pal and more) and finish trophies that need a finish date. Announcement and a trophy count notice. |
 | 52 | Stats has a Library view next to Reading. |
