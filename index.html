@@ -803,6 +803,8 @@ details.adv>summary::-webkit-details-marker{display:none}
 details.adv>summary h3{display:inline;margin:0}
 details.adv>summary::after{content:' ▾';color:var(--mute)}
 details.adv[open]>summary::after{content:' ▴'}
+.rlist .rrow{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}.rrow .rt{display:flex;flex-direction:column;min-width:0}.rrow small{color:var(--mute)}.rrow .rd{text-align:right;white-space:nowrap;font-size:12px;color:var(--mute)}
+.gpick{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:8px 0;max-height:260px;overflow:auto;font-size:13px}.gpick b{grid-column:1/-1;margin-top:6px}.gpick label{display:flex;gap:6px;align-items:center}
 #fill{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:12px}
 .fl-c{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:14px;max-width:460px;width:100%;margin:auto}
 .fl-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.fl-h span{flex:1;color:var(--mute);font-size:12px}
@@ -894,7 +896,7 @@ const days=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/8
 
 function load(){try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);db.books=p.books||[];db.goals=p.goals||{};db.flags=Object.assign({themes:{},seen:{}},p.flags||{});db.flags.themes=db.flags.themes||{};db.flags.seen=db.flags.seen||{};db.sync=Object.assign(db.sync,p.sync||{})}}catch(e){}
   const S=db.sync;S.dirty=S.dirty||{};S.tomb=S.tomb||{};db.books.forEach(b=>{if(!b.updated){b.updated=Date.now();S.dirty[b.id]=1}})}
-function touch(b){b.updated=Date.now();hhTouch(b);db.sync.dirty[b.id]=1;delete db.sync.tomb[b.id]}
+function touch(b){if(!b.ab&&b.pr!==false&&st.user)b.ab=st.user.uid;b.updated=Date.now();hhTouch(b);db.sync.dirty[b.id]=1;delete db.sync.tomb[b.id]}
 function save(){dbVer++;try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Could not save. Storage may be full or blocked.')}scheduleSync()}
 let tt;function toast(m){let t=$('.toast');if(t)t.remove();t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);clearTimeout(tt);tt=setTimeout(()=>t.remove(),2800)}
 
@@ -943,6 +945,7 @@ function renderLibrary(){
 /* ---------- Stats ---------- */
 /* Library stats: everything in the library, not only what has been read. */
 function statTabs(){const t=ui.ssub||'read';return`<div class="stkseg"><button data-ssub="read" class="${t==='read'?'on':''}">Reading</button><button data-ssub="lib" class="${t==='lib'?'on':''}">Library</button></div>`}
+const fnrm0=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function renderLibStats(){
   $('#tools').innerHTML='';
   const B=db.books,N=B.length,hb=(arr)=>{const t=Math.max(1,...arr.map(a=>a[1]));return arr.map(([k,v])=>`<div class="hbar"><span>${esc(k)}</span><div class="bar"><i style="width:${v/t*100}%"></i></div><span style="width:34px;text-align:right">${v}</span></div>`).join('')||'<div class="note">Nothing yet.</div>'};
@@ -953,10 +956,17 @@ function renderLibStats(){
   const stat=tally(b=>b.pr===false?'Not marked by you yet':(SL[b.status]||'Other'),6);
   const own=[['Owned',B.filter(b=>b.own==='y').length],['To confirm',B.filter(b=>b.own==='?').length],['No longer owned',B.filter(b=>b.own==='n').length]].filter(x=>x[1]);
   const yrs={};B.forEach(b=>{const y=String(b.added||'').slice(0,4);if(/^\d{4}$/.test(y))yrs[y]=(yrs[y]||0)+1});
+  const uidMe=st.user?st.user.uid:'',nm=u=>!u?'Not recorded':u===uidMe?'You':((HH&&HH.names&&HH.names[u])||'Someone in the household');
+  const who=b=>b.ab||(b.pr===false?'':uidMe);
+  const addedBy=tally(b=>nm(who(b)),6);
+  const key=b=>fnrm0(b.title)+'|'+fnrm0(b.author),cnt={};B.forEach(b=>{const k=key(b);if(fnrm0(b.title))cnt[k]=(cnt[k]||0)+1});
+  const dups=Object.entries(cnt).filter(x=>x[1]>1),onrep=B.filter(b=>b.rep).length;
   const miss=[['No cover',B.filter(b=>!b.cover).length],['No pages',B.filter(b=>!(+b.pages>0)).length],['No genres',B.filter(b=>!(b.genres||[]).length).length],['No author',B.filter(b=>!String(b.author||'').trim()).length]].filter(x=>x[1]);
   $('#main').innerHTML=`${statTabs()}<div class="sec"><div class="stat"><div><b>${N.toLocaleString('en-IE')}</b><span>books in the library</span></div><div><b>${authors.toLocaleString('en-IE')}</b><span>authors</span></div><div><b>${series.toLocaleString('en-IE')}</b><span>series</span></div><div><b>${pages.toLocaleString('en-IE')}</b><span>pages${withP<N?' ('+withP+' books have a page count)':''}</span></div></div></div>
   <div class="sec"><h3>By status</h3>${hb(stat)}</div>
   ${own.length?`<div class="sec"><h3>Ownership</h3>${hb(own)}</div>`:''}
+  ${addedBy.length>1||(addedBy[0]&&addedBy[0][0]!=='Not recorded')?`<div class="sec"><h3>Added by</h3>${hb(addedBy)}</div>`:''}
+  ${dups.length||onrep?`<div class="sec"><h3>Repeats</h3>${hb([['Titles entered more than once',dups.length],['On repeat',onrep]].filter(x=>x[1]))}${dups.length?'<p class="note">Same title and author, more than one entry. Different editions count here too.</p>':''}</div>`:''}
   <div class="sec"><h3>By format</h3>${hb(tally(b=>b.format,8))}</div>
   <div class="sec"><h3>Top genres and tags</h3>${hb(tally(b=>b.genres,10))}</div>
   ${tally(b=>b.lang,6).length?`<div class="sec"><h3>By language</h3>${hb(tally(b=>b.lang,6))}</div>`:''}
@@ -967,36 +977,50 @@ function renderLibStats(){
 }
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-ssub]');if(a){ui.ssub=a.dataset.ssub;render();window.scrollTo(0,0)}});
 
+const starS=n=>n>0?'★'.repeat(Math.round(n)):'';
+function readListHTML(ye,label){
+  const L=ye.slice().sort((a,b)=>a.r.end<b.r.end?1:-1),lim=ui.rl?L.length:30;
+  if(!L.length)return'';
+  return`<div class="sec"><h3>Books read, ${esc(label)}</h3><div class="rlist">${L.slice(0,lim).map(e=>`<div class="rrow"><span class="rt"><b>${esc(e.b.title)}</b><small>${esc(e.b.author||'')}</small></span><span class="rd">${esc(e.r.end)}${e.b.rating?'<br>'+starS(e.b.rating):''}</span></div>`).join('')}</div>${L.length>lim?`<div class="setrow"><button class="btn" data-sa="rlall">Show all ${L.length}</button></div>`:''}</div>`;
+}
+function repeatHTML(ye,label){
+  const m=new Map();ye.forEach(e=>m.set(e.b.id,e.b));
+  const L=[...m.values()].map(b=>({b,n:b.reads.filter(r=>r.end&&!r.u).length})).filter(x=>x.n>=2).sort((a,b)=>b.n-a.n);
+  if(!L.length)return'';
+  return`<div class="sec"><h3>Read more than once</h3><div class="rlist">${L.slice(0,12).map(x=>`<div class="rrow"><span class="rt"><b>${esc(x.b.title)}</b><small>${esc(x.b.author||'')}</small></span><span class="rd">${x.n} times</span></div>`).join('')}</div><p class="note">${L.length} book${L.length===1?'':'s'}${L.length>12?', top 12 shown':''}. Times read is across all years.</p></div>`;
+}
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-sa="rlall"]')){ui.rl=1;render()}});
 function renderStats(){
   $('#tools').innerHTML='';if(ui.ssub==='lib')return renderLibStats();
   const entries=[];db.books.forEach(b=>{if(!b.rep&&b.pr!==false)b.reads.forEach(r=>{if(r.end)entries.push({b,r})})});
   const years=[...new Set(entries.map(e=>e.r.end.slice(0,4)))].sort().reverse();
   const cy=String(new Date().getFullYear());if(!years.includes(cy))years.unshift(cy);
-  if(!years.includes(String(ui.year)))ui.year=cy;
-  const y=String(ui.year),ye=entries.filter(e=>e.r.end.slice(0,4)===y);
+  if(ui.year!=='all'&&!years.includes(String(ui.year)))ui.year=cy;
+  const y=String(ui.year),ALL=y==='all',ye=ALL?entries.slice():entries.filter(e=>e.r.end.slice(0,4)===y);
   const pages=ye.reduce((s,e)=>s+(+e.b.pages||0),0);
   const rated=[...new Map(ye.filter(e=>e.b.rating).map(e=>[e.b.id,e.b])).values()];
   const avg=rated.length?(rated.reduce((s,b)=>s+b.rating,0)/rated.length).toFixed(2):'–';
   const timed=ye.filter(e=>e.r.start);const avgd=timed.length?Math.round(timed.reduce((s,e)=>s+Math.max(1,days(e.r.start,e.r.end)+1),0)/timed.length):'–';
   const longest=ye.reduce((m,e)=>(+e.b.pages||0)>(+(m&&m.b.pages)||0)?e:m,null);
-  const goal=+db.goals[y]||0;
+  const goal=ALL?0:(+db.goals[y]||0);
   const months=Array(12).fill(0);ye.forEach(e=>months[+e.r.end.slice(5,7)-1]++);const mx=Math.max(1,...months);
   const tally=(f)=>{const m={};ye.forEach(e=>f(e.b).forEach(k=>{if(k)m[k]=(m[k]||0)+1}));return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6)};
   const hb=(arr)=>{const t=Math.max(1,...arr.map(a=>a[1]));return arr.map(([k,v])=>`<div class="hbar"><span>${esc(k)}</span><div class="bar"><i style="width:${v/t*100}%"></i></div><span style="width:28px;text-align:right">${v}</span></div>`).join('')||'<div class="note">Nothing yet.</div>'};
   const undated=db.books.filter(b=>b.status==='finished'&&!b.rep&&b.pr!==false&&!lastEnd(b)).length;
-  $('#main').innerHTML=`${statTabs()}<div class="chips">${years.map(v=>`<button data-year="${v}" class="${v===y?'on':''}">${v}</button>`).join('')}</div>
+  $('#main').innerHTML=`${statTabs()}<div class="chips"><button data-year="all" class="${ALL?'on':''}">All</button>${years.map(v=>`<button data-year="${v}" class="${v===y?'on':''}">${v}</button>`).join('')}</div>
   <div class="sec"><div class="stat"><div><b>${ye.length}</b><span>books finished${goal?' of '+goal:''}</span></div><div><b>${pages.toLocaleString('en-IE')}</b><span>pages</span></div><div><b>${avg}</b><span>average rating</span></div><div><b>${avgd}</b><span>average days to finish</span></div></div>
   ${goal?`<div class="bar" style="height:10px;margin-top:12px"><i style="width:${Math.min(100,ye.length/goal*100)}%"></i></div><div class="note" style="margin-top:4px">${ye.length>=goal?'Goal reached.':(goal-ye.length)+' to go for your '+y+' goal.'}</div>`:`<div class="note" style="margin-top:10px">Set a yearly goal in Settings.</div>`}</div>
   <div class="sec"><h3>Finished by month</h3><div class="months">${months.map((v,i)=>`<div>${v||''}<i style="height:${v/mx*80}px"></i>${'JFMAMJJASOND'[i]}</div>`).join('')}</div></div>
   <div class="sec"><h3>By format</h3>${hb(tally(b=>[b.format]))}</div>
   <div class="sec"><h3>Top tags</h3>${hb(tally(b=>b.genres))}</div>
   ${longest&&longest.b.pages?`<div class="sec"><h3>Longest read</h3>${esc(longest.b.title)} <span class="note">${longest.b.pages} pages</span></div>`:''}
+  ${readListHTML(ye,ALL?'all time':y)}${repeatHTML(ye,ALL?'all time':y)}
   <div class="sec"><h3>All years</h3>${hb(years.map(v=>[v,entries.filter(e=>e.r.end.slice(0,4)===v).length]))}${undated?`<div class="note">${undated} finished book${undated>1?'s have':' has'} no finish date, so they do not count towards stats, goals or trophies. <button class="btn" data-act="undated">Show them</button></div>`:''}</div>`;
 }
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=53;
+const APP_VER=54;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -2066,7 +2090,7 @@ function ownerBox(){
   const list=Object.entries(GRANTS||{}).filter(([e,t])=>t.length).map(([e,t])=>`<div style="margin:8px 0"><b style="font-size:14px">${esc(e)}</b><div class="gchips">${t.map(k=>{const f=FLAIR.find(x=>x.k===k),th=k.startsWith('theme:')?THEMES[k.slice(6)]:null;return`<button class="btn gc" data-act="ungift" data-e="${esc(e)}" data-k="${esc(k)}">${esc(f?f.n:th?th.name+' (theme)':k)} ✕</button>`}).join('')}</div></div>`).join('');
   return`<div class="sec"><h3>Owner tools</h3><p class="note">Give a flair title or a theme to someone, using the email they sign in with. They get it the next time they sync.</p>
   <div class="f"><input id="gEmail" type="email" placeholder="Their email" autocomplete="off"></div>
-  <div class="f"><select id="gFlair"><optgroup label="Flair titles">${FLAIR.map(f=>`<option value="${f.k}">${esc(f.n)}</option>`).join('')}</optgroup><optgroup label="Themes">${Object.keys(RULES).filter(k=>k!=='nook').map(k=>`<option value="theme:${k}">${esc((THEMES[k]||{name:k}).name)}</option>`).join('')}</optgroup></select></div>
+  <p class="note">Tick as many as you like.</p><div class="gpick"><b>Flair titles</b>${FLAIR.map(f=>`<label><input type="checkbox" name="gk" value="${f.k}"> ${esc(f.n)}</label>`).join('')}<b>Themes</b>${Object.keys(RULES).filter(k=>k!=='nook').map(k=>`<label><input type="checkbox" name="gk" value="theme:${k}"> ${esc((THEMES[k]||{name:k}).name)}</label>`).join('')}</div>
   <div class="setrow"><button class="btn p" data-act="gift">Give</button></div>${list||'<p class="note">Nothing given yet.</p>'}</div>`;
 }
 async function setGrant(em,arr){
@@ -2075,9 +2099,10 @@ async function setGrant(em,arr){
   render();
 }
 function giveFlair(){
-  const em=($('#gEmail').value||'').trim().toLowerCase(),k=$('#gFlair').value;
+  const em=($('#gEmail').value||'').trim().toLowerCase(),ks=[...document.querySelectorAll('input[name=gk]:checked')].map(x=>x.value);
   if(!/^\S+@\S+\.\S+$/.test(em)){toast('Enter a valid email.');return}
-  const cur=new Set((GRANTS&&GRANTS[em])||[]);cur.add(k);setGrant(em,[...cur]);
+  if(!ks.length){toast('Tick at least one.');return}
+  const cur=new Set((GRANTS&&GRANTS[em])||[]);ks.forEach(k=>cur.add(k));setGrant(em,[...cur]);
 }
 function ungift(em,k){setGrant(em,((GRANTS&&GRANTS[em])||[]).filter(x=>x!==k))}
 
@@ -2141,7 +2166,7 @@ async function changePw(){
 }
 /* ---------- Household (shared library) ---------- */
 const myBooks=()=>db.books.filter(b=>b.pr!==false);
-const HSH=['title','author','isbn','pages','cover','series','seriesNo','format','genres','edition','rel'];
+const HSH=['ab','title','author','isbn','pages','cover','series','seriesNo','format','genres','edition','rel'];
 const hsig=b=>JSON.stringify(HSH.map(k=>b[k]));
 const psig=b=>JSON.stringify([b.status,b.rating,b.review,b.notes,b.reads,b.progress,b.rep]);
 const cardCfg=()=>db.flags.card||{};
@@ -2191,10 +2216,10 @@ async function hhSync(F,fs){
     let sh;try{sh=JSON.parse(r.json)}catch(e){return}
     if(loc){
       if((loc.hat||0)>=r.updated){if((loc.hat||0)>r.updated)S.hdirty[id]=1;return}
-      HSH.forEach(k=>{if(sh[k]!==undefined)loc[k]=sh[k]});loc.hh=1;loc.hsig=hsig(loc);loc.hat=r.updated;S.dirty[id]=1;changed=true;
+      HSH.forEach(k=>{if(sh[k]!==undefined)loc[k]=sh[k]});if(!loc.ab&&r.by)loc.ab=r.by;loc.hh=1;loc.hsig=hsig(loc);loc.hat=r.updated;S.dirty[id]=1;changed=true;
     }else{
       if(S.tomb[id]&&!S.hdirty[id]){/* deleted here earlier, keep gone only if household also deleted */}
-      const b=newBook(Object.assign({},sh,{id,hh:1,pr:false,added:today()}));
+      const b=newBook(Object.assign({},sh,{id,hh:1,pr:false,added:today()}));if(!b.ab&&r.by)b.ab=r.by;
       b.psig=psig(b);b.hsig=hsig(b);b.hat=r.updated;b.updated=Date.now();delete S.tomb[id];S.dirty[id]=1;db.books.push(b);changed=true;
     }
   });
@@ -2203,7 +2228,7 @@ async function hhSync(F,fs){
     const chunk=ids.slice(i,i+100),batch=F.writeBatch(fs);
     chunk.forEach(id=>{
       const b=db.books.find(x=>x.id===id);
-      if(b&&b.hh){const sh={};HSH.forEach(k=>sh[k]=b[k]);batch.set(F.doc(col,id),{json:JSON.stringify(sh),updated:b.hat||Date.now(),deleted:false,by:st.user.uid,synced:F.serverTimestamp()})}
+      if(b&&b.hh){if(!b.ab)b.ab=st.user.uid;const sh={};HSH.forEach(k=>sh[k]=b[k]);batch.set(F.doc(col,id),{json:JSON.stringify(sh),updated:b.hat||Date.now(),deleted:false,by:st.user.uid,synced:F.serverTimestamp()})}
       else if(S.htomb[id])batch.set(F.doc(col,id),{json:'',updated:S.htomb[id],deleted:true,by:st.user.uid,synced:F.serverTimestamp()});
     });
     await batch.commit();chunk.forEach(id=>delete S.hdirty[id]);
@@ -2570,7 +2595,7 @@ document.addEventListener('click',async e=>{
   if(ds.pg){ui.page=(ui.page||0)+(+ds.pg);renderLibraryList();const f=$('.fbar');if(f)window.scrollTo({top:Math.max(0,f.getBoundingClientRect().top+scrollY-4)});return}
   if(ds.own){ui.own=!ui.own;ui.page=0;render();return}
   if(ds.status){ui.status=ds.status;ui.own=false;ui.page=0;render();return}
-  if(ds.year){ui.year=+ds.year;render();return}
+  if(ds.year){ui.year=ds.year==='all'?'all':+ds.year;ui.rl=0;render();return}
   if(ds.open){openForm(ds.open);return}
   if(ds.pick!==undefined){pick(+ds.pick);return}
   if(d){
