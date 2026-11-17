@@ -10,8 +10,11 @@ Live version: https://annoyingkay.github.io/Shelf/
 - Adds books by scanning the barcode, searching online (Open Library) or typing them in.
 - Records format, pages, series, tags, edition, physical release date, copies owned and date of purchase.
 - Marks books "On repeat" for children's books or favourites read again and again. These are kept out of goals, stats and trophies.
-- Shows yearly and monthly stats, a reading goal, and a list of finished books that have no finish date. A finished book needs a finish date to count towards stats, goals and trophies. Trophies already earned are kept.
-- Awards trophies and ranks, with a bell for notices.
+- Shows reading stats for a year or for all years, with the list of books read, books read more than once, a reading goal, and a list of finished books that have no finish date. A second Library view covers everything collected: status, ownership, formats, genres, languages, authors, series, who added each book, repeated titles and missing details. A finished book needs a finish date to count towards stats, goals and trophies. Trophies already earned are kept.
+- Awards ranks and trophies, with a bell for notices. Ranks come from books finished with a finish date. Library trophies count what you add, rate and review. Finish trophies need a finish date. Each of Kay's favourite books has a sticker, kept in its own Stickers tab inside Trophies. Stickers do not count towards ranks.
+- Shows four library views (list, compact, grid small, grid big), and a Genre filter.
+- Marks books you may or may not still own: an ownership note, the source a book came from, and a To confirm filter.
+- Fills in covers, pages, ISBN and genres online for the whole library in one pass. A full match on title, author and language is applied. Everything else, and every comic and manga, asks you first. Typed details are never overwritten.
 - Offers themes. Some are open from the start and the rest unlock as you read, depending on what you read. Hallowe'en and Yule stay unlocked once earned.
 - Seasonal themes unlock by opening Shelf during their month and stay unlocked once earned: Sobremesa (October), St Brigid and St Valentine (February), St Patrick (March), as well as Hallowe'en and Yuletide.
 - Shows a small daily greeting on the Library page, once a day and once across your devices. Most days in the current batch carry a small original drawing and a dry line about the date, and quiet days get a plain greeting.
@@ -37,6 +40,8 @@ A household lets partners, family or friends share one library.
 - Leaving keeps the books you have used as private books and removes the shared ones you never touched.
 - Each household has a name. Members see each other's cards: nickname, rank, title, trophy count and a card colour taken from the themes. Each person can pick their colours or hide everything except their nickname.
 - Adding a book that is already in the library asks whether it is a repeat entry or should be cancelled.
+- Each book remembers who added it. Existing books use the best record available, so older ones can be a best guess.
+- A Goodreads import adds your own status, rating and dates to shared books you have not marked yet.
 
 ## Files
 
@@ -73,9 +78,30 @@ The Firebase API key is public by design. Access is controlled by the security r
 
 ## Privacy
 
-There is no tracking and no advertising. Book lookups go to Open Library. Cover images are loaded from the address stored on each book. If sync is off, nothing leaves your device apart from those requests.
+There is no tracking and no advertising. Book lookups go to Open Library and Google Books. Cover images are loaded from the address stored on each book. If sync is off, nothing leaves your device apart from those requests.
 
 ## Notes
 
 - The console style themes and the Crystal Chronicle theme are original designs. They are not affiliated with any game maker.
 - Tested in recent Chrome and Edge. Barcode scanning needs a browser that supports it and a camera.
+
+## Version history
+
+Each release adds a line here. The version number shows at the bottom of Settings.
+
+| Version | What changed |
+| --- | --- |
+| 54 | Owner tools can give several flairs and themes at once. Reading stats gain an All years button, a list of books read for the chosen period and a Read more than once list. Library stats show who added each book and repeated titles. Books remember who added them. |
+| 53 | Trophies reinstated: library trophies (Moving In, Shelf Builder, Fair Critic, Pen Pal and more) and finish trophies that need a finish date. Announcement and a trophy count notice. |
+| 52 | Stats has a Library view next to Reading. |
+| 51 | A Google sign in counts as verified for households. Household section shows the verify buttons. |
+| 50 | Household actions say what happened or why nothing did. A stuck busy flag clears itself. |
+| 49 | Fixed the Join household button, which read the wrong data and did nothing. |
+| 48 | Goodreads import fills in your own data on shared books you have not marked yet. |
+| 47 | Stickers replace the Kay's Favourites trophies. A Stickers tab sits inside Trophies and stickers appear on household cards. |
+| 46 | Online pass for covers and details, with confirmation for comics and manga. Genre filter in the library. |
+| 45 | Ownership notes and sources, To confirm filter, JSON import skips books already in the library. |
+| 44 | Settings reorganised: sync card with backup, goal in Profile, Advanced box. Four library views. Service worker cache fix. |
+| 43 | The First One trophy only counts books with a finish date. |
+| 41 | Welcome only notice for new users after registering, a nudge to register when adding books without an account. |
+| 40 | Ranks come from books finished with a finish date. Milestone trophy for every rank. Generic trophies removed (reinstated in 53). |
