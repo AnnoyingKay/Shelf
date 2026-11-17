@@ -941,8 +941,34 @@ function renderLibrary(){
 }
 
 /* ---------- Stats ---------- */
-function renderStats(){
+/* Library stats: everything in the library, not only what has been read. */
+function statTabs(){const t=ui.ssub||'read';return`<div class="stkseg"><button data-ssub="read" class="${t==='read'?'on':''}">Reading</button><button data-ssub="lib" class="${t==='lib'?'on':''}">Library</button></div>`}
+function renderLibStats(){
   $('#tools').innerHTML='';
+  const B=db.books,N=B.length,hb=(arr)=>{const t=Math.max(1,...arr.map(a=>a[1]));return arr.map(([k,v])=>`<div class="hbar"><span>${esc(k)}</span><div class="bar"><i style="width:${v/t*100}%"></i></div><span style="width:34px;text-align:right">${v}</span></div>`).join('')||'<div class="note">Nothing yet.</div>'};
+  const tally=(f,n)=>{const m={};B.forEach(b=>{[].concat(f(b)).forEach(k=>{k=String(k||'').trim();if(k)m[k]=(m[k]||0)+1})});return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n||8)};
+  const pages=B.reduce((s,b)=>s+(+b.pages||0),0),withP=B.filter(b=>+b.pages>0).length;
+  const authors=new Set(B.map(b=>String(b.author||'').trim().toLowerCase()).filter(Boolean)).size,series=new Set(B.map(b=>String(b.series||'').trim().toLowerCase()).filter(Boolean)).size;
+  const SL={want:'To read',reading:'Reading',finished:'Finished',dnf:'Did not finish'};
+  const stat=tally(b=>b.pr===false?'Not marked by you yet':(SL[b.status]||'Other'),6);
+  const own=[['Owned',B.filter(b=>b.own==='y').length],['To confirm',B.filter(b=>b.own==='?').length],['No longer owned',B.filter(b=>b.own==='n').length]].filter(x=>x[1]);
+  const yrs={};B.forEach(b=>{const y=String(b.added||'').slice(0,4);if(/^\d{4}$/.test(y))yrs[y]=(yrs[y]||0)+1});
+  const miss=[['No cover',B.filter(b=>!b.cover).length],['No pages',B.filter(b=>!(+b.pages>0)).length],['No genres',B.filter(b=>!(b.genres||[]).length).length],['No author',B.filter(b=>!String(b.author||'').trim()).length]].filter(x=>x[1]);
+  $('#main').innerHTML=`${statTabs()}<div class="sec"><div class="stat"><div><b>${N.toLocaleString('en-IE')}</b><span>books in the library</span></div><div><b>${authors.toLocaleString('en-IE')}</b><span>authors</span></div><div><b>${series.toLocaleString('en-IE')}</b><span>series</span></div><div><b>${pages.toLocaleString('en-IE')}</b><span>pages${withP<N?' ('+withP+' books have a page count)':''}</span></div></div></div>
+  <div class="sec"><h3>By status</h3>${hb(stat)}</div>
+  ${own.length?`<div class="sec"><h3>Ownership</h3>${hb(own)}</div>`:''}
+  <div class="sec"><h3>By format</h3>${hb(tally(b=>b.format,8))}</div>
+  <div class="sec"><h3>Top genres and tags</h3>${hb(tally(b=>b.genres,10))}</div>
+  ${tally(b=>b.lang,6).length?`<div class="sec"><h3>By language</h3>${hb(tally(b=>b.lang,6))}</div>`:''}
+  <div class="sec"><h3>Top authors</h3>${hb(tally(b=>b.author,8))}</div>
+  <div class="sec"><h3>Biggest series</h3>${hb(tally(b=>b.series,8))}</div>
+  <div class="sec"><h3>Added per year</h3>${hb(Object.entries(yrs).sort((a,b)=>b[0]-a[0]))}</div>
+  ${miss.length?`<div class="sec"><h3>Missing details</h3>${hb(miss)}<p class="note">The online pass in Settings can fill covers, pages and genres.</p></div>`:''}`;
+}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-ssub]');if(a){ui.ssub=a.dataset.ssub;render();window.scrollTo(0,0)}});
+
+function renderStats(){
+  $('#tools').innerHTML='';if(ui.ssub==='lib')return renderLibStats();
   const entries=[];db.books.forEach(b=>{if(!b.rep&&b.pr!==false)b.reads.forEach(r=>{if(r.end)entries.push({b,r})})});
   const years=[...new Set(entries.map(e=>e.r.end.slice(0,4)))].sort().reverse();
   const cy=String(new Date().getFullYear());if(!years.includes(cy))years.unshift(cy);
@@ -958,7 +984,7 @@ function renderStats(){
   const tally=(f)=>{const m={};ye.forEach(e=>f(e.b).forEach(k=>{if(k)m[k]=(m[k]||0)+1}));return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6)};
   const hb=(arr)=>{const t=Math.max(1,...arr.map(a=>a[1]));return arr.map(([k,v])=>`<div class="hbar"><span>${esc(k)}</span><div class="bar"><i style="width:${v/t*100}%"></i></div><span style="width:28px;text-align:right">${v}</span></div>`).join('')||'<div class="note">Nothing yet.</div>'};
   const undated=db.books.filter(b=>b.status==='finished'&&!b.rep&&b.pr!==false&&!lastEnd(b)).length;
-  $('#main').innerHTML=`<div class="chips">${years.map(v=>`<button data-year="${v}" class="${v===y?'on':''}">${v}</button>`).join('')}</div>
+  $('#main').innerHTML=`${statTabs()}<div class="chips">${years.map(v=>`<button data-year="${v}" class="${v===y?'on':''}">${v}</button>`).join('')}</div>
   <div class="sec"><div class="stat"><div><b>${ye.length}</b><span>books finished${goal?' of '+goal:''}</span></div><div><b>${pages.toLocaleString('en-IE')}</b><span>pages</span></div><div><b>${avg}</b><span>average rating</span></div><div><b>${avgd}</b><span>average days to finish</span></div></div>
   ${goal?`<div class="bar" style="height:10px;margin-top:12px"><i style="width:${Math.min(100,ye.length/goal*100)}%"></i></div><div class="note" style="margin-top:4px">${ye.length>=goal?'Goal reached.':(goal-ye.length)+' to go for your '+y+' goal.'}</div>`:`<div class="note" style="margin-top:10px">Set a yearly goal in Settings.</div>`}</div>
   <div class="sec"><h3>Finished by month</h3><div class="months">${months.map((v,i)=>`<div>${v||''}<i style="height:${v/mx*80}px"></i>${'JFMAMJJASOND'[i]}</div>`).join('')}</div></div>
@@ -970,7 +996,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=51;
+const APP_VER=53;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -1404,6 +1430,71 @@ TR.push(
  T_('year','Year in Books','calendar-event','Finish books in one year','A whole year, in order.',c=>Math.max(0,...Object.values(c.Y)),[12,26,52,100],'books in a year'),
  O_('goal','Goal Getter','target','Reach your yearly reading goal','Promised, planned, done.',c=>goalYears(c).some(x=>x.n>=x.g)?1:0)
 );
+/* Reinstated in v52. Library trophies count what is in your library. Finish trophies need a finish date. */
+const L_=(id,n,g,t,u,q,v)=>({id,n,k:'L',g,t,u,q,v});
+const libSet=(c,f)=>{const s=new Set();c.V.forEach(v=>[].concat(f(v.b)).forEach(x=>{x=String(x||'').trim().toLowerCase();if(x)s.add(x)}));return s.size};
+const OLDTR=[
+ L_('reg','Shelf Builder','library',[10,50,250,1000,2500],'books registered','A shelf is a promise you make to the floor.',c=>c.reg),
+ L_('fin','Bookworm','book',[10,50,100,500,1000],'books finished','Some people count sheep. You count endings.',c=>c.fin),
+ L_('pages','Page Count','file-text',[5000,25000,100000,250000,500000],'pages read','Somewhere, a forest is quietly keeping score.',c=>c.pages),
+ L_('fe','Pixel Pages','device-tablet',[5,25,100],'ebooks finished','Reads in the dark, glows in your hand.',c=>c.cat.e),
+ L_('fa','Good Listener','headphones',[5,25,100],'audiobooks finished','Hands busy, ears booked.',c=>c.cat.a),
+ L_('fc','Panel Hopper','message-2',[5,25,100],'comics, manga and graphic novels finished','Pictures: faster than words, usually.',c=>c.cat.c),
+ L_('fp','Paper Trail','book-2',[5,25,100],'printed books finished','It smells better and never asks to charge.',c=>c.cat.p),
+ L_('rated','Fair Critic','star',[10,50,100],'books rated','Opinions, now measured to the half star.',c=>c.rated),
+ L_('rev','Pen Pal','pencil',[5,25,100],'reviews written','Proof you had thoughts, in writing.',c=>c.reviews),
+ L_('ser','Series Finale','link',[1,5,10],'series completed','Closure, in several volumes.',c=>c.sc),
+ L_('tags','Wide Reader','leaf',[5,10,20],'different tags in your library','Variety is the spice of the shelf.',c=>libSet(c,b=>b.genres)),
+ L_('auth','Cast of Characters','users',[10,25,50],'different authors in your library','A different voice for every mood.',c=>libSet(c,b=>b.author)),
+ L_('reread','Second Helping','repeat',[1,5,10],'books re-read','Same book, different you.',c=>c.reread),
+ L_('notes','Margin Notes','writing',[10,50],'books with notes','Scribbling, but with a purpose.',c=>c.notes),
+ L_('streak','Monthly Habit','flame',[3,6,12,24],'months in a row with a finish','Consistency: the rarest genre.',c=>c.streak),
+ L_('meta','Trophy Hoarder','trophy',[10,25,50,75],'trophies earned','Collecting the collection.',()=>0),
+
+ O_('first','First Shelf','bookmark','Add your first book','Every library starts with one book and a bad idea about space.',c=>c.reg>0?1:0),
+ O_('open','Open Book','book','Finish your first book','One down. The rest of the pile is listening.',c=>c.fin>0?1:0),
+ O_('cover','Cover Story','photo','Add a cover from your own photo','Judged by its cover, and passed.',c=>c.V.some(v=>(v.b.cover||'').startsWith('data:'))?1:0),
+ O_('scan','Barcode Hunter','barcode','Scan a barcode','Beep. The book surrenders.',c=>c.flag('scan')?1:0),
+ O_('gr','Moving In','file-import','Import your Goodreads library','Boxes unpacked, books alphabetised in spirit.',c=>c.flag('gr')?1:0),
+ O_('cloud','Cloud Nine','cloud','Turn on sync','Your books now have air miles.',c=>c.flag('cloud')?1:0),
+ O_('exp','Safe and Sound','device-floppy','Export a backup','Belt, braces and a file.',c=>c.flag('exp')?1:0),
+ O_('ward','Wardrobe','palette','Try six different themes','Same books, six outfits.',c=>c.themes>=6?1:0),
+ O_('sit','One Sitting','hourglass','Start and finish a book on the same day','Dinner was optional.',c=>c.E.some(e=>e.s&&e.s===e.e)?1:0),
+ O_('door','Doorstopper','weight','Finish a book of 800 pages or more','Also useful in a power cut.',c=>c.F.some(v=>+v.b.pages>=800)?1:0),
+ O_('quick','Quick Read','bolt','Finish a book under 100 pages','Short, sweet, and over before the kettle.',c=>c.F.some(v=>+v.b.pages>0&&+v.b.pages<100)?1:0),
+ O_('slow','Slow Burn','clock','Take 90 days or more to finish a book','Some books must be sipped.',c=>c.E.some(e=>e.s&&e.e&&dn(e.s,e.e)>=90)?1:0),
+ O_('back','Comeback','arrow-back-up','Finish a book a year after starting it','It waited patiently. Books do that.',c=>c.E.some(e=>e.s&&e.e&&dn(e.s,e.e)>=365)?1:0),
+ O_('hat','Hat Trick','number-3','Finish 3 books in one month','Three is a pattern.',c=>maxMon(c)>=3?1:0),
+ O_('binge','Binge Month','flame','Finish 5 books in one month','The laundry can wait.',c=>maxMon(c)>=5?1:0),
+ O_('unput','Unputdownable','eye','Finish 400+ pages within 3 days','The book won. You allowed it.',c=>c.E.some(e=>e.s&&e.e&&+e.b.pages>=400&&dn(e.s,e.e)<=2)?1:0),
+ O_('fluent','Format Fluent','world','Finish an ebook, an audiobook, a comic and a printed book in one year','Eyes, ears, thumbs and paper.',c=>{const y={};c.E.forEach(e=>{if(!e.e)return;const k=CAT(e.b.format);if(k)(y[e.e.slice(0,4)]=y[e.e.slice(0,4)]||new Set()).add(k)});return Object.values(y).some(s=>s.size>=4)?1:0}),
+ O_('five','Five Stars','star','Give a book 5 stars','Rare, like a quiet commute.',c=>c.V.some(v=>v.b.rating>=5)?1:0),
+ O_('critic','Honest Critic','thumb-down','Rate a book 2 stars or lower and say why','Politely devastating.',c=>c.V.some(v=>v.b.rating>0&&v.b.rating<=2&&(v.b.review||'').trim())?1:0),
+ O_('dnf',"Life's Too Short",'scissors','Mark a book as did not finish','Quitting is a form of editing.',c=>c.V.some(v=>v.st==='dnf')?1:0),
+ O_('tri','Trilogy','books','Finish books 1, 2 and 3 of a series','Third time lucky, and also first and second.',c=>c.tri>0?1:0),
+ O_('fan','Fan Club','heart','Finish 5 books by one author','At this point, send them a card.',c=>{const m={};c.F.forEach(v=>{const a=(v.b.author||'').trim().toLowerCase();if(a)m[a]=(m[a]||0)+1});return Math.max(0,...Object.values(m))>=5?1:0}),
+ O_('tidy','Tidy Shelf','checklist','Have 25 books with pages and tags filled in','The spreadsheet in you approves.',c=>c.V.filter(v=>+v.b.pages>0&&(v.b.genres||[]).length).length>=25?1:0),
+ O_('mount','TBR Mountain','mountain','Have 25 books on your want to read list','Base camp established.',c=>c.V.filter(v=>v.st==='want').length,[25]),
+ O_('tamer','TBR Tamer','target','Finish 10 books that waited 6 months or more','They waited. You delivered.',c=>c.F.filter(v=>{const e=v.rs.filter(r=>!r.u).map(r=>r.end).filter(Boolean).sort().pop();return e&&v.b.added&&dn(v.b.added,e)>=183}).length,[10]),
+ O_('ends','Bookends','layout-columns','Finish a book in the first and the last week of a year','Opened the year with a book and closed it with another.',c=>{const y={};Object.keys(c.D).forEach(d=>{const o=y[d.slice(0,4)]=y[d.slice(0,4)]||{a:0,b:0};if(d.slice(5)<='01-07')o.a=1;if(d.slice(5)>='12-25')o.b=1});return Object.values(y).some(o=>o.a&&o.b)?1:0}),
+
+ T_('goal','Goal Getter','target','Reach your yearly reading goal','Promised, planned, done.',c=>goalYears(c).filter(x=>x.n>=x.g).length,[1,3,5],'yearly goals reached'),
+ T_('early','Ahead of Schedule','calendar-check','Reach your yearly goal before 1 December','Early, which is almost suspicious.',c=>goalYears(c).some(x=>{if(x.n<x.g)return false;const ends=Object.keys(c.D).filter(d=>d.slice(0,4)===x.y).flatMap(d=>Array(c.D[d]).fill(d)).sort();return ends[x.g-1]<x.y+'-12-01'})?1:0),
+ T_('over','Overachiever','rocket','Finish 150% of your yearly goal','The goal was merely a suggestion.',c=>goalYears(c).some(x=>x.n>=x.g*1.5)?1:0),
+ T_('b2b','Back to Back','award','Reach your goal two years in a row','Twice is a habit.',c=>{const ok=new Set(goalYears(c).filter(x=>x.n>=x.g).map(x=>+x.y));return [...ok].some(y=>ok.has(y+1))?1:0}),
+ T_('fourq','Four Quarters','calendar-event','Finish 3 or more books in every quarter of a year','Steady as a clock.',c=>{const ys=new Set(Object.keys(c.Q).map(k=>k.slice(0,4)));return [...ys].some(y=>[1,2,3,4].every(q=>(c.Q[y+'-Q'+q]||0)>=3))?1:0}),
+ T_('bestq','Quarter Champion','medal','Finish more books in a quarter than ever before','Your finest three months, on record.',c=>Math.max(0,...Object.values(c.Q)),[3,5,8,12],'books in your best quarter'),
+ T_('summer','Summer Reader','sun','Finish 5 books between June and August','Sun cream and spines.',c=>{const ys=new Set(Object.keys(c.M).map(k=>k.slice(0,4)));return [...ys].some(y=>monthSum(c,y,[6,7,8])>=5)?1:0}),
+ T_('winter','Winter Warmer','snowflake','Finish 5 books between December and February','Blanket, tea, chapter.',c=>{const ys=new Set(Object.keys(c.M).map(k=>+k.slice(0,4)));return [...ys].some(y=>monthSum(c,y,[12])+monthSum(c,y+1,[1,2])>=5)?1:0}),
+
+ H_('round','Round Number','number-0','Lifetime pages land exactly on a multiple of 10,000','Exactly. Suspiciously exact.',c=>{let cum=0;const ev=c.E.slice().sort((a,b)=>a.e.localeCompare(b.e));for(const e of ev){cum+=+e.b.pages||0;if(cum>0&&cum%10000===0)return 1}return 0}),
+ H_('triple','Triple Threat','confetti','Finish 3 books on one day','Efficiency, or showing off.',c=>Math.max(0,...Object.values(c.D))>=3?1:0),
+ H_('pal','Palindrome','arrows-left-right','Finish a book with a palindromic page count','Reads the same backwards, like a good ending.',c=>c.F.some(v=>{const p=String(v.b.pages||'');return p.length>=3&&p===[...p].reverse().join('')})?1:0),
+ H_('mirror','Mirror Date','hash','Finish a book on a palindromic date','A date worth reading twice.',c=>Object.keys(c.D).some(d=>{const s=d.replace(/-/g,'');return s===[...s].reverse().join('')})?1:0),
+ H_('lucky','Lucky Seven','number-7','Give 7 books 5 stars','Fortune favours the well read.',c=>c.V.filter(v=>v.b.rating>=5).length>=7?1:0),
+ H_('ans','The Answer','bulb','Finish a book of exactly 42 pages','Not the question, but still.',c=>c.F.some(v=>+v.b.pages===42)?1:0)
+];
+OLDTR.filter(t=>!['open','goal','binge'].includes(t.id)&&!TR.some(x=>x.id===t.id)).forEach(t=>TR.push(t));
 const HOLS=[
  D_('nyd','Fresh Start','sunrise',{fx:['01-01']},"New Year's Day",'A clean page, and you wasted no time.'),
  D_('reyes','Three Kings','crown',{fx:['01-06']},"Three Kings' Day (6 January)",'Gold, frankincense and a very long paperback.'),
@@ -1514,7 +1605,8 @@ const metalIdx=(t,l)=>MAPM[t.t.length][Math.max(1,l)-1];
 
 function levelsNow(){
   const c=mkCtx(null),lvl={},val={};let n=0;
-  TR.forEach(t=>{const v=t.v(c);val[t.id]=v;lvl[t.id]=lvlOf(t,v);if(lvl[t.id]>0)n++});
+  TR.forEach(t=>{if(t.id==='meta')return;const v=t.v(c);val[t.id]=v;lvl[t.id]=lvlOf(t,v);if(lvl[t.id]>0)n++});
+  val.meta=n;lvl.meta=lvlOf(TBY.meta,n);
   return{lvl,val,c};
 }
 function candDates(){
@@ -1533,12 +1625,14 @@ function trophyState(){
   const items=[];
   TR.forEach(t=>{
     const lvl=now.lvl[t.id],when=[];
-    if(lvl>0&&dates.length){
+    if(t.id!=='meta'&&lvl>0&&dates.length){
       for(let L=1;L<=lvl;L++){let lo=0,hi=dates.length-1,ans=-1;while(lo<=hi){const m=(lo+hi)>>1;if(lvlOf(t,t.v(ctxAt(m)))>=L){ans=m;hi=m-1}else lo=m+1}when.push(ans>=0?dates[ans]:'')}
     }
     items.push({t,lvl,val:now.val[t.id],when});
   });
   {const tb=(db.flags&&db.flags.tbest)||{};items.forEach(x=>{if(x.t.k==='M')return;const f=tb[x.t.id]|0;if(f>x.lvl)x.lvl=f})}
+  const meta=items.find(x=>x.t.id==='meta'),firsts=items.filter(x=>x.t.id!=='meta'&&x.lvl>0).map(x=>x.when[0]||today()).sort();
+  if(meta)for(let L=1;L<=meta.lvl;L++)meta.when.push(firsts[meta.t.t[L-1]-1]||'');
   const c=now.c;
   return TCACHE={ver:dbVer,items,fin:c.fin,Y:c.Y,by:Object.fromEntries(items.map(x=>[x.t.id,x]))};
 }
@@ -1799,7 +1893,7 @@ function themeLock(id){
 
 /* ----- the bell: a small inbox that syncs, so each notice shows once across your devices ----- */
 const NT=()=>db.flags.notes||(db.flags.notes={});
-const CHANGES=[{id:'chg:v45',m:'New: books can carry an ownership note with the source they came from, and a To confirm filter in the library for the ones you have not checked yet.',i:'📚'},{id:'chg:v40',m:'Changed: ranks now follow the books you have finished with a finish date, and every rank has a milestone trophy. The generic trophies are gone. Holidays, rare finds, favourites, reading volume and yearly goals stay. Cards show books read in total and this year.',i:'🎖️'},{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. A Household tab appears once you start or join a household. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
+const CHANGES=[{id:'chg:v52',m:'Trophies are back, and stats now cover the books you have collected. Library trophies such as Moving In, Shelf Builder, Fair Critic and Pen Pal count what you add, rate and review. Trophies about finishing books need a finish date. Stats has a new Library view, next to Reading.',i:'🏆'},{id:'chg:v45',m:'New: books can carry an ownership note with the source they came from, and a To confirm filter in the library for the ones you have not checked yet.',i:'📚'},{id:'chg:v40',m:'Changed: ranks now follow the books you have finished with a finish date, and every rank has a milestone trophy. The generic trophies are gone. Holidays, rare finds, favourites, reading volume and yearly goals stay. Cards show books read in total and this year.',i:'🎖️'},{id:'chg:v20',m:'New: a Profile tab for your card, nickname, rank, flair, theme and household, with up to three favourite books on your card. A Household tab appears once you start or join a household. The Library page now scrolls its header away, keeps only the filters in view, and shows 20 books per page.',i:'👤'},{id:'chg:v19',m:'New: a small daily greeting on the Library page, one bell with Activity and News, and four seasonal themes: Sobremesa in October, St Brigid and St Valentine in February, St Patrick in March. Open Shelf during the month to keep one.',i:'📚'},{id:'chg:v18',m:'Changed: finished books with no finish date no longer count towards trophies, stats or goals. Trophies you already earned are kept. Households can now have a name and show member cards.',i:'🏠'},{id:'chg:v17',m:'New: edition, physical release date, date of purchase and number of copies on each book. Finished books with no finish date can now be listed from Stats.',i:'📚'},{id:'chg:v16',m:'New: households. Share one library with a partner, family or friends from Settings. Everyone keeps their own dates, ratings, trophies and stats.',i:'👥'},{id:'chg:v15',m:'New: the Crystal Chronicle theme for books based on video games, and the console style themes are now Plotstation, Tomebox and Flipswitch.',i:'💎'},{id:'chg:v14',m:'New: console style themes for verified accounts, themes that unlock through your books, and a bell that syncs between your devices.',i:'✨'}];
 function unreadN(){return Object.values(NT()).filter(n=>!n.r&&!n.x).length}
 function bellDot(){
   const b=document.getElementById('bell'),n=unreadN();
@@ -1862,7 +1956,10 @@ function titleTick(){
     const nf=fe.filter(k=>!(t.fl||[]).includes(k));
     if(nf.length){t.fl=(t.fl||[]).concat(nf);ch=true;nf.forEach(k=>{const f0=FLAIR.find(f=>f.k===k);if(f0)notify('flair:'+k,'New title unlocked: '+f0.n+(TBY[f0.id]?'. It comes from the '+TBY[f0.id].n+' trophy.':''),'🏅')});if(!msg)msg='New title unlocked: '+FLAIR.find(f=>f.k===nf[0]).n+(nf.length>1?` (+${nf.length-1} more)`:'')}
   }
-  {const tb=db.flags.tbest||(db.flags.tbest={});Object.keys(tb).forEach(k=>{if(/^m\d+$/.test(k)){delete tb[k];ch=true}});S.items.forEach(x=>{if(x.t.k!=='M'&&x.lvl>(tb[x.t.id]|0)){tb[x.t.id]=x.lvl;ch=true}})}
+  {const tb=db.flags.tbest||(db.flags.tbest={});
+    if(!db.flags.tb52){['fin','pages','fe','fa','fc','fp','ser','reread','streak','sit','door','quick','slow','back','hat','unput','fluent','tri','fan','tamer','ends','early','over','b2b','fourq','bestq','summer','winter','round','triple','pal','mirror','ans','meta'].forEach(k=>{delete tb[k]});db.flags.tb52=today();ch=true}
+    if(!db.flags.tc52&&db.books.length){db.flags.tc52=today();ch=true;const n=S.items.filter(x=>x.lvl>0).length;notify('tr:count52','You have earned '+n+(n===1?' trophy':' trophies')+' so far. Open the Trophies tab to see them.','🏆')}}
+  {const tb=db.flags.tbest;Object.keys(tb).forEach(k=>{if(/^m\d+$/.test(k)){delete tb[k];ch=true}});S.items.forEach(x=>{if(x.t.k!=='M'&&x.lvl>(tb[x.t.id]|0)){tb[x.t.id]=x.lvl;ch=true}})}
   if(ch){persistLocal();scheduleSync()}
   if(msg)setTimeout(()=>toast(msg),900);
 }
