@@ -91,6 +91,9 @@ Each release adds a line here. The version number shows at the bottom of Setting
 
 | Version | What changed |
 | --- | --- |
+| 58 | Household bookcase: book titles are larger and easier to read on the spines, and each member gets their own shelf. |
+| 57 | Time flairs for every theme (one hour in a theme unlocks its flair). New library trophies: Proper Collection (books owned), Series Collector, Quarter Century, Century Shelf, Five Hundred Deep, plus Collector and Shelf Stacker flairs. Household page has a bookcase: each member picks five books, shown as unique decorated spines. |
+| 56 | More cats on Cosy Cat (header, cards, peeking cat on the tab bar, patterned background). Meadow redrawn as a Ghibli inspired hillside scene. New original Storybook fairy tale theme with its own ranks and trophy. Time flairs: spend 10 hours in Cosy Cat, Meadow or Storybook to unlock Cat Whisperer, Hilltop Dweller or Happily Ever After. |
 | 55 | Price paid and currency on each book, next to date of purchase. Library stats show what you spent. A JSON import adds purchase details to books already on the shelf. |
 | 54 | Owner tools can give several flairs and themes at once. Reading stats gain an All years button, a list of books read for the chosen period and a Read more than once list. Library stats show who added each book and repeated titles. Books remember who added them. |
 | 53 | Trophies reinstated: library trophies (Moving In, Shelf Builder, Fair Critic, Pen Pal and more) and finish trophies that need a finish date. Announcement and a trophy count notice. |
