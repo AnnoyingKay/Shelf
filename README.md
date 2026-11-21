@@ -91,6 +91,8 @@ Each release adds a line here. The version number shows at the bottom of Setting
 
 | Version | What changed |
 | --- | --- |
+| 60 | Author autocomplete on the book form: type in the Author box and a dropdown lists authors already in your library (accent insensitive), most recently read first, with a switch to A to Z that is remembered. |
+| 59 | Add or fill a book from an Amazon link. The product code (ASIN) is read from the link. Paperback and hardback codes are ISBN-10 and are looked up in Open Library and Google Books. Kindle codes are tried in Open Library; if unknown, the link is saved on the book. Year fills the release date when blank. |
 | 58 | Household bookcase: book titles are larger and easier to read on the spines, and each member gets their own shelf. |
 | 57 | Time flairs for every theme (one hour in a theme unlocks its flair). New library trophies: Proper Collection (books owned), Series Collector, Quarter Century, Century Shelf, Five Hundred Deep, plus Collector and Shelf Stacker flairs. Household page has a bookcase: each member picks five books, shown as unique decorated spines. |
 | 56 | More cats on Cosy Cat (header, cards, peeking cat on the tab bar, patterned background). Meadow redrawn as a Ghibli inspired hillside scene. New original Storybook fairy tale theme with its own ranks and trophy. Time flairs: spend 10 hours in Cosy Cat, Meadow or Storybook to unlock Cat Whisperer, Hilltop Dweller or Happily Ever After. |

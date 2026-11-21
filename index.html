@@ -853,6 +853,12 @@ html[data-theme=storybook] body>nav.tabs,html[data-theme=storybook] .fab{positio
 .shopt{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}.shopt i{opacity:.65;font-style:normal;font-size:12px;display:block}
 .shopt{justify-content:flex-start!important;text-align:left!important;margin:0}.shopt input{width:auto!important;flex:none;margin:3px 0 0;min-height:0}.shopt span{flex:1;text-align:left}
 .bshelf{min-height:185px}.bsp{flex:0 1 auto;min-width:0}.bsp svg{max-width:100%;height:auto}.bgrp{gap:1px;min-width:0}
+.aud{position:absolute;left:0;right:0;top:100%;z-index:40;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.18);overflow:hidden;margin-top:2px}
+.aud[hidden]{display:none}
+.aut{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;font-size:11px;color:var(--mute);border-bottom:1px solid var(--line)}
+.aut button{border:0;background:none;color:var(--accent);font-size:11px;padding:2px 0;cursor:pointer}
+.aui{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:none;padding:9px 12px;color:var(--ink);cursor:pointer;gap:1px}
+.aui:last-child{border-bottom:0}.aui b{font-size:14px;font-weight:600}.aui i{font-style:normal;font-size:11px;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -1059,7 +1065,7 @@ function renderStats(){
 
 /* ---------- Settings ---------- */
 let installEvt=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(stab())render()});
-const APP_VER=58;
+const APP_VER=60;
 function syncText(){const S=db.sync;
   if(!navigator.onLine)return'Offline. Changes will upload when you are back online';
   if(syncMsg)return syncMsg;
@@ -1103,8 +1109,9 @@ function drawForm(keepScroll){
   $('#sheet').innerHTML=`<div class="bar-top"><button class="btn" data-act="close">Cancel</button><h2>${isNew?'Add book':'Edit book'}</h2><button class="btn p" data-act="savebook">Save</button></div>
   <div class="form">
   ${isNew?'<div class="f"><button class="btn p" data-act="scan" style="width:100%">📷 Scan the barcode on the back of the book</button><div class="note">Works with the ISBN barcode on most printed books.</div></div>':''}
+  <div class="f"><label>Amazon link (optional)</label><input data-f="amz" type="url" inputmode="url" placeholder="Paste a link from Amazon" value="${esc(d.amz||'')}" autocomplete="off"><div class="note">The code in the link is used to find the cover, author, pages and year. Kindle codes are often missing from the free databases, so you may need to add the title yourself.</div><button class="btn" data-act="amz" style="width:100%;margin-top:8px">Look up from the link</button>${d.amz?`<div class="note"><a href="${esc(d.amz)}" target="_blank" rel="noopener">Open on Amazon</a></div>`:''}</div>
   <div class="f"><label>Title</label><input data-f="title" value="${esc(d.title)}" autocomplete="off"></div>
-  <div class="f"><label>Author</label><input data-f="author" value="${esc(d.author)}" autocomplete="off"></div>
+  <div class="f" style="position:relative"><label>Author</label><input data-f="author" value="${esc(d.author)}" autocomplete="off" autocapitalize="words"><div class="aud" id="aud" role="listbox" hidden></div></div>
   <div class="f"><label>Language for searches</label><select id="lkl">${LKL.map(([k,n])=>`<option value="${k}" ${lkLang===k?'selected':''}>${n}</option>`).join('')}</select><div class="note">A scanned barcode keeps the title of that exact edition.</div><button class="btn" data-act="lookup" style="width:100%;margin-top:8px">Search online for details and cover</button><div class="note" id="lk">${esc(lookupMsg)}</div>
   ${lookupRes?lookupRes.map((r,i)=>`<div class="res" data-pick="${i}"><div class="cover" style="width:40px;height:60px;font-size:16px">${r.cover?`<img src="${esc(r.cover)}" alt="" onerror="this.remove()">`:'?'}</div><div class="meta"><div class="t">${esc(r.title)}</div><div class="a">${esc(r.author)}${r.year?' · '+r.year:''}${r.pages?' · '+r.pages+' pages':''}</div></div></div>`).join(''):''}</div>
   <div class="f"><span class="lbl">Status</span><div class="seg">${Object.entries(STATUS).map(([k,v])=>`<button data-st="${k}" class="${d.status===k?'on':''}">${v}</button>`).join('')}</div></div>
@@ -1170,6 +1177,43 @@ async function olSearch(q,lang){
   const j=await jget('https://openlibrary.org/search.json?'+q+'&limit=8'+(lang&&lang!=='any'&&L3[lang]?'&language='+L3[lang]:'')+'&fields=title,author_name,first_publish_year,number_of_pages_median,isbn,cover_i,subject');
   return(j.docs||[]).map(x=>({title:x.title,author:(x.author_name||[]).join(', '),year:x.first_publish_year,pages:x.number_of_pages_median,isbn:(x.isbn||[]).find(i=>i.length===13)||(x.isbn||[])[0]||'',cover:x.cover_i?`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg`:'',subjects:shortSub(x.subject)}));
 }
+const auNorm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+let auSort=(()=>{try{return localStorage.getItem('shelf.as')||'read'}catch(e){return'read'}})();
+function auList(){const m=new Map();
+  db.books.forEach(b=>{const a=String(b.author||'').trim();if(!a||b.pr===false)return;const k=auNorm(a);let o=m.get(k);if(!o){o={a,n:0,last:'',add:''};m.set(k,o)}o.n++;
+    (b.reads||[]).forEach(r=>{const x=r.end||r.start||'';if(x>o.last)o.last=x});if((b.added||'')>o.add)o.add=b.added||''});
+  return[...m.values()]}
+function auSorted(){const L=auList();return auSort==='az'?L.sort((x,y)=>x.a.localeCompare(y.a)):L.sort((x,y)=>(y.last>x.last?1:y.last<x.last?-1:0)||(y.add>x.add?1:y.add<x.add?-1:0)||x.a.localeCompare(y.a))}
+function auShow(inp){const box=document.getElementById('aud');if(!box)return;const q=auNorm(inp.value.trim());
+  if(!q){box.hidden=true;return}
+  const hit=auSorted().filter(o=>{const k=auNorm(o.a);return k.includes(q)&&k!==q});
+  if(!hit.length){box.hidden=true;return}
+  box.innerHTML=`<div class="aut"><span>${auSort==='az'?'A to Z':'Last read first'}</span><button type="button" data-aus="1">${auSort==='az'?'Sort by last read':'Sort A to Z'}</button></div>`+hit.slice(0,8).map(o=>`<button type="button" class="aui" role="option" data-au="${esc(o.a)}"><b>${esc(o.a)}</b><i>${o.n} ${o.n===1?'book':'books'}${o.last?' · last read '+esc(o.last.slice(0,7)):''}</i></button>`).join('');
+  box.hidden=false}
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.f==='author'&&d)auShow(t)});
+document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.dataset&&t.dataset.f==='author'&&d&&t.value)auShow(t)});
+document.addEventListener('focusout',e=>{if(e.target&&e.target.dataset&&e.target.dataset.f==='author')setTimeout(()=>{const b=document.getElementById('aud');if(b&&!b.contains(document.activeElement))b.hidden=true},200)});
+document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.closest('[data-au],[data-aus]');if(!t)return;e.preventDefault();
+  if(t.dataset.aus){auSort=auSort==='az'?'read':'az';try{localStorage.setItem('shelf.as',auSort)}catch(_){}const i=document.querySelector('[data-f=author]');if(i)auShow(i);return}
+  if(d){d.author=t.dataset.au;const i=document.querySelector('[data-f=author]');if(i)i.value=d.author;const b=document.getElementById('aud');if(b)b.hidden=true}});
+function amzParse(s){s=String(s||'').trim();let m=/(?:amazon\.([a-z.]{2,6})|amzn\.[a-z]+)\/(?:[^?#\s]*\/)?(?:dp|gp\/product|gp\/aw\/d|d)\/([A-Z0-9]{10})(?=[/?#&]|$)/i.exec(s),asin,dom='com',slug='';
+  if(m){asin=m[2].toUpperCase();dom=m[1]||'com';slug=(/amazon\.[a-z.]+\/([^/?#]+)\/(?:dp|gp)/i.exec(s)||[])[1]||''}
+  else if(/^[A-Z0-9]{10}$/i.test(s))asin=s.toUpperCase();
+  else return null;
+  let t='';try{if(/^[A-Za-z0-9%+-]{6,}$/.test(slug)&&slug.includes('-'))t=decodeURIComponent(slug).replace(/-/g,' ')}catch(e){}
+  return{asin,dom,slug:t,url:'https://www.amazon.'+dom+'/dp/'+asin}}
+const i10to13=s=>{const b='978'+s.slice(0,9);let t=0;for(let i=0;i<12;i++)t+=+b[i]*(i%2?3:1);return b+((10-t%10)%10)};
+async function amzLookup(){
+  const a=amzParse(d.amz);if(!a){lookupRes=null;lookupMsg='No Amazon product code found in that link.';drawForm();return}
+  d.asin=a.asin;d.amz=a.url;
+  if(/^\d{9}[\dX]$/.test(a.asin)){d.isbn=i10to13(a.asin);await lookup(true);return}
+  lookupMsg='Searching…';drawForm();
+  let reached=0;const ok=p=>p.then(v=>{reached++;return v},()=>[]);
+  const o=await ok(olSearch('q=id_amazon:'+a.asin,'any'));
+  if(o.length){lookupRes=o.slice(0,3);if(o.length===1){pick(0);return}lookupMsg='Tap a result to fill in the details.';drawForm();return}
+  if(!reached){lookupRes=null;lookupMsg='Could not reach the book databases. Check your connection.';drawForm();return}
+  if(a.slug&&!d.title.trim()){d.title=a.slug;await lookup();return}
+  lookupRes=null;lookupMsg='That Amazon code is not in the free book databases. The link is saved. Add the title and tap Search to fill in the rest.';drawForm()}
 /* Shelf by Kay and Claude, https://annoyingkay.github.io/Shelf/ */
 async function lookup(auto){
   const isbn=(d.isbn||'').replace(/[^0-9Xx]/g,'');
@@ -1200,7 +1244,7 @@ async function lookup(auto){
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='lkl'){lkLang=t.value;try{localStorage.setItem('shelf.ll',lkLang)}catch(_){}}});
 function pick(i){
   const r=lookupRes[i];d.title=r.title||d.title;d.author=r.author||d.author;if(r.pages)d.pages=r.pages;if(r.cover)d.cover=r.cover;if(r.isbn&&!d.isbn)d.isbn=r.isbn;
-  if(!d.genres.length)d.genres=r.subjects;lookupRes=null;lookupMsg='Details added.';drawForm();
+  if(r.year&&!d.rel&&d.amz)d.rel=String(r.year);if(!d.genres.length)d.genres=r.subjects;lookupRes=null;lookupMsg='Details added.';drawForm();
 }
 function shrinkImage(file){return new Promise(res=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const w=300,h=Math.round(im.height*w/im.width),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.8))};im.onerror=()=>res('');im.src=u})}
 
@@ -2709,7 +2753,7 @@ document.addEventListener('click',async e=>{
     case'close':closeForm();break;
     case'savebook':saveBook();break;
     case'addread':d.reads.push({start:'',end:''});drawForm();break;
-    case'lookup':lookup();break;
+    case'lookup':lookup();break;case'amz':amzLookup();break;
     case'scan':startScan();break;
     case'stopscan':stopScan();break;
     case'nocover':d.cover='';drawForm();break;
